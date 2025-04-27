@@ -99,6 +99,10 @@ urlpatterns = [
     # Notification URLs
     path('notifications/', views.notifications, name='notifications'),
     path('notification/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
+
+    # Personal Invitation URLs
+    path('invitations/my/', views.my_invitations, name='my_invitations'),
+    path('invitations/respond/<int:invitation_id>/', views.respond_to_invitation, name='respond_to_invitation'),
 ]
 
 # Add media URL configuration for development

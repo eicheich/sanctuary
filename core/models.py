@@ -443,3 +443,41 @@ class InvitationUse(models.Model):
     class Meta:
         unique_together = ['invitation', 'user']
         ordering = ['-accepted_at']
+
+class PersonalInvitation(models.Model):
+    """Track personal invitations sent to specific users"""
+    STATUS_CHOICES = (
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('rejected', 'Rejected'),
+        ('expired', 'Expired')
+    )
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('moderator', 'Moderator'),
+        ('user', 'User'),
+    )
+
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='personal_invitations')
+    invited_user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_invitations')
+    sent_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_personal_invitations')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Invitation to {self.invited_user.username} for {self.group.group_name} ({self.get_status_display()})"
+
+    @property
+    def is_expired(self):
+        from django.utils import timezone
+        if self.expires_at is None:
+            return False
+        return timezone.now() > self.expires_at
+
+    @property
+    def is_valid(self):
+        """Check if invitation is still valid for response"""
+        return self.status == 'pending' and not self.is_expired

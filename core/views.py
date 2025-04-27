@@ -346,28 +346,73 @@ def manage_group(request, group_id):
 def add_member(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
-    # Only allow group creator to add members
+    # Only allow group creator or super admin to add members
     if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to add members to this group.")
 
     if request.method == 'POST':
         username = request.POST.get('username')
         role = request.POST.get('role', 'user')  # Default to regular user role if not specified
+        expires_days = request.POST.get('expires_days', 7)  # Default to 7 days expiry
 
         try:
             user = User.objects.get(username=username)
-            # Add user with specified role using GroupMembership
-            group.add_member(user, role=role)
+
+            # Check if user is already in the group
+            if group.members.filter(id=user.id).exists():
+                messages.warning(request, f"{username} is already a member of this group.")
+                return redirect('manage_group', group_id=group_id)
+
+            # Check if there's an existing pending invitation
+            existing_invitation = PersonalInvitation.objects.filter(
+                invited_user=user,
+                group=group,
+                status='pending'
+            ).exists()
+
+            if existing_invitation:
+                messages.warning(request, f"There is already a pending invitation for {username}.")
+                return redirect('manage_group', group_id=group_id)
+
+            # Set expiration date (default 7 days)
+            from django.utils import timezone
+            from datetime import timedelta
+
+            try:
+                expiry_days = int(expires_days)
+                if expiry_days < 1:
+                    expiry_days = 7  # Default if invalid
+            except (ValueError, TypeError):
+                expiry_days = 7
+
+            expires_at = timezone.now() + timedelta(days=expiry_days)
+
+            # Create a personal invitation
+            invitation = PersonalInvitation.objects.create(
+                group=group,
+                invited_user=user,
+                sent_by=request.user,
+                role=role,
+                expires_at=expires_at
+            )
+
+            # Create notification for the invited user
+            Notification.objects.create(
+                user=user,
+                notification_type='system',
+                title=f'Group Invitation: {group.group_name}',
+                message=f"{request.user.username} has invited you to join the group '{group.group_name}' as a {invitation.get_role_display().lower()}. Please check your invitations to respond."
+            )
 
             # Log activity
             ActivityLog.objects.create(
                 user=request.user,
                 group=group,
                 action_type='add_member',
-                description=f"{user.username} was added to group '{group.group_name}' as {role} by {request.user.username}"
+                description=f"{request.user.username} sent an invitation to {user.username} to join group '{group.group_name}' as {role}"
             )
 
-            messages.success(request, f"{username} added to the group successfully as {role}!")
+            messages.success(request, f"Invitation sent to {username} successfully! They will need to accept the invitation to join the group.")
         except User.DoesNotExist:
             messages.error(request, f"User '{username}' not found.")
 
@@ -1876,3 +1921,104 @@ def leave_group(request, group_id):
         return redirect('home')
 
     return render(request, 'core/leave_group_confirmation.html', {'group': group})
+
+# Personal Invitation Views
+@login_required
+def my_invitations(request):
+    """View to see all personal invitations received by the user"""
+    # Get all pending invitations for this user
+    invitations = PersonalInvitation.objects.filter(
+        invited_user=request.user,
+        status='pending'
+    ).select_related('group', 'sent_by').order_by('-created_at')
+
+    # Mark expired invitations
+    now = timezone.now()
+    for invitation in invitations:
+        if invitation.expires_at and invitation.expires_at < now:
+            invitation.status = 'expired'
+            invitation.save()
+
+    # Re-query to get updated statuses
+    invitations = PersonalInvitation.objects.filter(
+        invited_user=request.user,
+        status='pending'
+    ).select_related('group', 'sent_by').order_by('-created_at')
+
+    return render(request, 'core/my_invitations.html', {
+        'invitations': invitations
+    })
+
+@login_required
+def respond_to_invitation(request, invitation_id):
+    """View to accept or reject a personal invitation"""
+    invitation = get_object_or_404(
+        PersonalInvitation,
+        id=invitation_id,
+        invited_user=request.user,
+        status='pending'
+    )
+
+    if invitation.is_expired:
+        invitation.status = 'expired'
+        invitation.save()
+        messages.error(request, "This invitation has expired.")
+        return redirect('my_invitations')
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # Set response time
+        invitation.responded_at = timezone.now()
+
+        if action == 'accept':
+            # Add user to group with the specified role
+            invitation.group.add_member(request.user, role=invitation.role)
+            invitation.status = 'accepted'
+            invitation.save()
+
+            # Log activity
+            ActivityLog.objects.create(
+                user=request.user,
+                group=invitation.group,
+                action_type='join_group',
+                description=f"{request.user.username} accepted invitation to join '{invitation.group.group_name}' as {invitation.get_role_display()}"
+            )
+
+            # Notify the sender
+            Notification.objects.create(
+                user=invitation.sent_by,
+                notification_type='system',
+                title='Invitation Accepted',
+                message=f"{request.user.username} has accepted your invitation to join '{invitation.group.group_name}' as {invitation.get_role_display()}"
+            )
+
+            messages.success(request, f"You have successfully joined {invitation.group.group_name} as {invitation.get_role_display()}!")
+
+        elif action == 'reject':
+            invitation.status = 'rejected'
+            invitation.save()
+
+            # Log the rejection
+            ActivityLog.objects.create(
+                user=request.user,
+                group=invitation.group,
+                action_type='reject_invitation',
+                description=f"{request.user.username} rejected invitation to join '{invitation.group.group_name}'"
+            )
+
+            # Notify the sender
+            Notification.objects.create(
+                user=invitation.sent_by,
+                notification_type='system',
+                title='Invitation Rejected',
+                message=f"{request.user.username} has declined your invitation to join '{invitation.group.group_name}'"
+            )
+
+            messages.info(request, f"You have declined the invitation to join {invitation.group.group_name}.")
+
+        return redirect('my_invitations')
+
+    return render(request, 'core/respond_to_invitation.html', {
+        'invitation': invitation
+    })
