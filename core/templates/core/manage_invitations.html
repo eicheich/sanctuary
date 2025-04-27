@@ -24,68 +24,169 @@
                 <div class="card-body">
                     {% if invitations %}
                         <div class="table-responsive">
-                            <table class="table">
-                                <thead>
+                            <table class="table table-hover">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Email</th>
+                                        <th>Invitation Code</th>
                                         <th>Status</th>
-                                        <th>Sent By</th>
                                         <th>Date Sent</th>
                                         <th>Expires</th>
+                                        <th>Used</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {% for invitation in invitations %}
                                     <tr>
-                                        <td>{{ invitation.email }}</td>
                                         <td>
-                                            {% if invitation.status == 'pending' %}
-                                                <span class="invitation-status invitation-status-pending">Pending</span>
-                                            {% elif invitation.status == 'accepted' %}
-                                                <span class="invitation-status invitation-status-accepted">Accepted</span>
-                                            {% elif invitation.status == 'rejected' %}
-                                                <span class="invitation-status invitation-status-rejected">Rejected</span>
+                                            {% if invitation.email %}
+                                                {{ invitation.email }}
                                             {% else %}
-                                                <span class="invitation-status invitation-status-expired">Expired</span>
+                                                <span class="badge bg-secondary">Universal Link</span>
+                                                <small class="text-muted d-block mt-1">{{ invitation.invitation_code|truncatechars:10 }}</small>
                                             {% endif %}
                                         </td>
-                                        <td>{{ invitation.created_by.username }}</td>
-                                        <td>{{ invitation.created_at|date:"M d, Y" }}</td>
-                                        <td>{{ invitation.expires_at|date:"M d, Y" }}</td>
                                         <td>
-                                            {% if invitation.status == 'pending' %}
-                                                <div class="dropdown">
-                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ invitation.id }}" data-bs-toggle="dropdown" aria-expanded="false">
-                                                        Actions
-                                                    </button>
-                                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ invitation.id }}">
-                                                        <li>
-                                                            <button type="button" class="dropdown-item" onclick="copyInvitationLink('{{ request.scheme }}://{{ request.get_host }}{% url "accept_invitation" code=invitation.invitation_code %}')">
-                                                                <i class="fas fa-copy me-2"></i>Copy Link
-                                                            </button>
-                                                        </li>
-                                                        <li>
-                                                            <form method="POST" action="{% url 'cancel_invitation' invitation_id=invitation.id %}" style="display: inline;">
-                                                                {% csrf_token %}
-                                                                <button type="submit" class="dropdown-item text-danger">
-                                                                    <i class="fas fa-times-circle me-2"></i>Cancel Invitation
-                                                                </button>
-                                                            </form>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            {% else %}
-                                                <button class="btn btn-sm btn-outline-secondary" disabled>
-                                                    {% if invitation.status == 'accepted' %}
-                                                        Accepted by {{ invitation.accepted_by.username }}
-                                                    {% elif invitation.status == 'rejected' %}
-                                                        Cancelled
-                                                    {% else %}
-                                                        Expired
-                                                    {% endif %}
-                                                </button>
+                                            {% if invitation.is_expired or invitation.status == 'expired' %}
+                                                <span class="badge bg-secondary">Expired</span>
+                                            {% elif invitation.status == 'active' %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% elif invitation.status == 'revoked' %}
+                                                <span class="badge bg-danger">Revoked</span>
                                             {% endif %}
+                                        </td>
+                                        <td>{{ invitation.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if invitation.expires_at %}
+                                                {% if invitation.is_expired %}
+                                                    <span class="text-danger">{{ invitation.expires_at|date:"M d, Y" }}</span>
+                                                {% else %}
+                                                    {{ invitation.expires_at|date:"M d, Y" }}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge bg-info">Never</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if invitation.usage_count > 0 %}
+                                                <span class="badge bg-success">{{ invitation.usage_count }} time(s)</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">0</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="actionDropdown{{ invitation.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                    Actions
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="actionDropdown{{ invitation.id }}">
+                                                    {% if invitation.is_valid %}
+                                                    <li>
+                                                        <button type="button" class="dropdown-item" onclick="copyInvitationLink('{{ request.scheme }}://{{ request.get_host }}{% url "accept_invitation" code=invitation.invitation_code %}')">
+                                                            <i class="fas fa-copy me-2"></i>Copy Link
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#detailsModal{{ invitation.id }}">
+                                                            <i class="fas fa-info-circle me-2"></i>View Details
+                                                        </button>
+                                                    </li>
+                                                    <li>
+                                                        <form method="POST" action="{% url 'cancel_invitation' invitation_id=invitation.id %}" style="display: inline;">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item text-warning">
+                                                                <i class="fas fa-ban me-2"></i>Revoke Link
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                    <li><hr class="dropdown-divider"></li>
+                                                    {% else %}
+                                                    <li>
+                                                        <button type="button" class="dropdown-item" data-bs-toggle="modal" data-bs-target="#detailsModal{{ invitation.id }}">
+                                                            <i class="fas fa-info-circle me-2"></i>View Details
+                                                        </button>
+                                                    </li>
+                                                    {% endif %}
+                                                    <li>
+                                                        <form method="POST" action="{% url 'delete_invitation' invitation_id=invitation.id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to permanently delete this invitation from history?');">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="dropdown-item text-danger">
+                                                                <i class="fas fa-trash-alt me-2"></i>Delete Permanently
+                                                            </button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+
+                                            <!-- Invitation Details Modal -->
+                                            <div class="modal fade" id="detailsModal{{ invitation.id }}" tabindex="-1" aria-labelledby="detailsModalLabel{{ invitation.id }}" aria-hidden="true">
+                                                <div class="modal-dialog">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="detailsModalLabel{{ invitation.id }}">Invitation Details</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <div class="mb-3">
+                                                                <h6>Invitation Code</h6>
+                                                                <p class="text-monospace bg-light p-2 rounded">{{ invitation.invitation_code }}</p>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <h6>Created By</h6>
+                                                                    <p>{{ invitation.created_by.username }}</p>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <h6>Created On</h6>
+                                                                    <p>{{ invitation.created_at|date:"F j, Y H:i" }}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="row">
+                                                                <div class="col-md-6 mb-3">
+                                                                    <h6>Status</h6>
+                                                                    <p>
+                                                                        {% if invitation.is_expired or invitation.status == 'expired' %}
+                                                                            <span class="badge bg-secondary">Expired</span>
+                                                                        {% elif invitation.status == 'active' %}
+                                                                            <span class="badge bg-success">Active</span>
+                                                                        {% elif invitation.status == 'revoked' %}
+                                                                            <span class="badge bg-danger">Revoked</span>
+                                                                        {% endif %}
+                                                                    </p>
+                                                                </div>
+                                                                <div class="col-md-6 mb-3">
+                                                                    <h6>Usage</h6>
+                                                                    <p>{{ invitation.usage_count }} / {% if invitation.max_uses %}{{ invitation.max_uses }}{% else %}<span class="text-muted">∞</span>{% endif %}</p>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <h6>Full Invitation URL</h6>
+                                                                <div class="input-group">
+                                                                    <input type="text" class="form-control" value="{{ request.scheme }}://{{ request.get_host }}{% url 'accept_invitation' code=invitation.invitation_code %}" id="invitationUrl{{ invitation.id }}" readonly>
+                                                                    <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('invitationUrl{{ invitation.id }}')"><i class="fas fa-copy"></i></button>
+                                                                </div>
+                                                            </div>
+
+                                                            {% if invitation.uses.all|length > 0 %}
+                                                            <div class="mt-4">
+                                                                <h6>Used By</h6>
+                                                                <ul class="list-group">
+                                                                    {% for use in invitation.uses.all %}
+                                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                                        {{ use.user.username }}
+                                                                        <span class="text-muted">{{ use.accepted_at|date:"M d, Y" }}</span>
+                                                                    </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            </div>
+                                                            {% endif %}
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                     {% endfor %}
@@ -130,6 +231,38 @@
                 document.body.removeChild(textarea);
             }
         });
+    }
+
+    function copyToClipboard(elementId) {
+        var element = document.getElementById(elementId);
+        if (element) {
+            element.select();
+            element.setSelectionRange(0, 99999); // For mobile devices
+
+            navigator.clipboard.writeText(element.value).then(function() {
+                // Show a temporary tooltip or message
+                var button = document.activeElement;
+                var originalInnerHTML = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(function() {
+                    button.innerHTML = originalInnerHTML;
+                }, 1000);
+            }).catch(function(err) {
+                // Fallback
+                try {
+                    document.execCommand('copy');
+                    var button = document.activeElement;
+                    var originalInnerHTML = button.innerHTML;
+                    button.innerHTML = '<i class="fas fa-check"></i>';
+                    setTimeout(function() {
+                        button.innerHTML = originalInnerHTML;
+                    }, 1000);
+                } catch (ex) {
+                    console.warn('Copy to clipboard failed.', ex);
+                    alert('Please select and copy the text manually');
+                }
+            });
+        }
     }
 </script>
 {% endblock %}

@@ -91,6 +91,7 @@ urlpatterns = [
     path('group/<int:group_id>/invitations/', views.manage_invitations, name='manage_invitations'),
     path('invitation/<str:code>/', views.accept_invitation, name='accept_invitation'),
     path('invitation/<int:invitation_id>/cancel/', views.cancel_invitation, name='cancel_invitation'),
+    path('invitations/delete/<int:invitation_id>/', views.delete_invitation, name='delete_invitation'),
 
     # Leaderboard and Achievement URLs
     path('group/<int:group_id>/leaderboard/', views.group_leaderboard, name='group_leaderboard'),

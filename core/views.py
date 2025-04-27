@@ -1424,6 +1424,33 @@ def cancel_invitation(request, invitation_id):
 
     return redirect('manage_invitations', group_id=invitation.group.id)
 
+@login_required
+def delete_invitation(request, invitation_id):
+    """Permanently delete an invitation from history"""
+    invitation = get_object_or_404(GroupInvitation, id=invitation_id)
+    group_id = invitation.group.id
+
+    # Check if user has permission (group admin or super admin)
+    if not (request.user.is_super_admin() or invitation.group.created_by == request.user):
+        return HttpResponseForbidden("You don't have permission to delete this invitation.")
+
+    # Store info for activity log
+    invitation_info = f"Invitation to group '{invitation.group.group_name}'"
+
+    # Delete invitation
+    invitation.delete()
+
+    # Log activity
+    ActivityLog.objects.create(
+        user=request.user,
+        group=invitation.group,
+        action_type='delete_invitation',
+        description=f"{request.user.username} deleted {invitation_info}"
+    )
+
+    messages.success(request, "Invitation has been permanently deleted from history.")
+    return redirect('manage_invitations', group_id=group_id)
+
 # Leaderboard and Achievement Views
 @login_required
 def group_leaderboard(request, group_id):
