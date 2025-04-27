@@ -6,13 +6,13 @@ from .models import (
 )
 
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'role', 'is_staff')
-    list_filter = ('role', 'is_staff', 'is_active')
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_super_admin', 'is_staff')
+    list_filter = ('is_super_admin', 'is_staff', 'is_active')
     fieldsets = UserAdmin.fieldsets + (
-        ('Role', {'fields': ('role',)}),
+        ('Admin Status', {'fields': ('is_super_admin',)}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Role', {'fields': ('role',)}),
+        ('Admin Status', {'fields': ('is_super_admin',)}),
     )
 
 class StudyGroupAdmin(admin.ModelAdmin):

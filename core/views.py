@@ -58,8 +58,8 @@ def request_study_group(request):
             status='pending'
         )
 
-        # Add the creator as member
-        study_group.members.add(request.user)
+        # Add the creator as member with admin role
+        study_group.add_member(request.user, role='admin')
 
         # Log activity
         ActivityLog.objects.create(
@@ -69,8 +69,8 @@ def request_study_group(request):
             description=f"Study Group Request: {group_name} by {request.user.username} from {institution}. Purpose: {purpose}"
         )
 
-        # Kirim notifikasi ke Super Admin
-        admins = User.objects.filter(role='super_admin')
+        # Send notification to Super Admins
+        admins = User.objects.filter(is_super_admin=True)
         for admin in admins:
             Notification.objects.create(
                 user=admin,
@@ -185,11 +185,11 @@ def home(request):
     recent_files = LearningFile.objects.filter(course__in=user_courses).order_by('-created_at')[:10]
 
     # Super admin specific data
-    if request.user.role == 'super_admin':
+    if request.user.is_super_admin:
         pending_groups = StudyGroup.objects.filter(status='pending').count()
         total_groups = StudyGroup.objects.count()
-        total_admins = User.objects.filter(role='admin').count()
-        total_users = User.objects.filter(role='user').count()
+        total_admins = User.objects.filter(group_memberships__role='admin').distinct().count()
+        total_users = User.objects.filter(group_memberships__role='user').distinct().count()
         total_reports = Report.objects.all().count()
         recent_activities = ActivityLog.objects.all().order_by('-timestamp')[:10]
 
@@ -202,9 +202,8 @@ def home(request):
             'recent_activities': recent_activities,
             'is_super_admin': True
         }
-
     # Regular admin/group admin specific data
-    elif request.user.role == 'admin':
+    elif request.user.created_groups.exists() or request.user.group_memberships.filter(role='admin').exists():
         admin_groups = StudyGroup.objects.filter(created_by=request.user)
         total_courses = Course.objects.filter(group__created_by=request.user).count()
         total_members = sum(group.members.count() for group in admin_groups)
@@ -313,11 +312,12 @@ def create_group(request):
             group_name=group_name,
             institution=institution,
             purpose=purpose,
-            created_by=request.user
+            created_by=request.user,
+            status='approved'  # Auto-approve groups created by admins
         )
 
-        # Add creator as member
-        group.members.add(request.user)
+        # Add creator as member with admin role
+        group.add_member(request.user, role='admin')
 
         # Log activity
         ActivityLog.objects.create(
@@ -327,7 +327,7 @@ def create_group(request):
             description=f"Group '{group_name}' created by {request.user.username}"
         )
 
-        messages.success(request, "Group created successfully! Waiting for approval.")
+        messages.success(request, "Group created successfully!")
         return redirect('home')
 
     return render(request, 'core/create_group.html')
@@ -337,7 +337,7 @@ def manage_group(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Only allow group creator to manage it
-    if group.created_by != request.user and not request.user.is_super_admin():
+    if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to manage this group.")
 
     return render(request, 'core/manage_group.html', {'group': group})
@@ -347,24 +347,27 @@ def add_member(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Only allow group creator to add members
-    if group.created_by != request.user and not request.user.is_super_admin():
+    if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to add members to this group.")
 
     if request.method == 'POST':
         username = request.POST.get('username')
+        role = request.POST.get('role', 'user')  # Default to regular user role if not specified
+
         try:
             user = User.objects.get(username=username)
-            group.members.add(user)
+            # Add user with specified role using GroupMembership
+            group.add_member(user, role=role)
 
             # Log activity
             ActivityLog.objects.create(
                 user=request.user,
                 group=group,
                 action_type='add_member',
-                description=f"{user.username} was added to group '{group.group_name}' by {request.user.username}"
+                description=f"{user.username} was added to group '{group.group_name}' as {role} by {request.user.username}"
             )
 
-            messages.success(request, f"{username} added to the group successfully!")
+            messages.success(request, f"{username} added to the group successfully as {role}!")
         except User.DoesNotExist:
             messages.error(request, f"User '{username}' not found.")
 
@@ -377,7 +380,7 @@ def create_course(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Only allow group creator or super admin to create courses
-    if group.created_by != request.user and not request.user.is_super_admin():
+    if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to create courses for this group.")
 
     if request.method == 'POST':
@@ -408,8 +411,8 @@ def edit_course(request, course_id):
     group = course.group
 
     # Only allow admin, group creator, or super admin to edit courses
-    if not (request.user.is_super_admin() or request.user == group.created_by or
-            (request.user.is_group_admin() and group.members.filter(id=request.user.id).exists())):
+    if not (request.user.is_super_admin or request.user == group.created_by or
+            (request.user.is_group_admin(group) and group.members.filter(id=request.user.id).exists())):
         return HttpResponseForbidden("You don't have permission to edit this course.")
 
     if request.method == 'POST':
@@ -438,8 +441,8 @@ def delete_course(request, course_id):
     group = course.group
 
     # Only allow admin, group creator, or super admin to delete courses
-    if not (request.user.is_super_admin() or request.user == group.created_by or
-            (request.user.is_group_admin() and group.members.filter(id=request.user.id).exists())):
+    if not (request.user.is_super_admin or request.user == group.created_by or
+            (request.user.is_group_admin(group) and group.members.filter(id=request.user.id).exists())):
         return HttpResponseForbidden("You don't have permission to delete this course.")
 
     if request.method == 'POST':
@@ -467,7 +470,7 @@ def group_activity(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Only allow group creator or super admin to view group activity
-    if group.created_by != request.user and not request.user.is_super_admin():
+    if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to view this group's activity.")
 
     logs = ActivityLog.objects.filter(group=group).order_by('-timestamp')
@@ -478,7 +481,7 @@ def create_user(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Only allow group creator to add members
-    if group.created_by != request.user and not request.user.is_super_admin():
+    if group.created_by != request.user and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to add members to this group.")
 
     if request.method == 'POST':
@@ -538,7 +541,7 @@ def course_detail(request, course_id):
     course = get_object_or_404(Course, id=course_id)
 
     # Check if user is a member of the group that owns the course
-    if not request.user.study_groups.filter(id=course.group.id).exists() and not request.user.is_super_admin():
+    if not request.user.study_groups.filter(id=course.group.id).exists() and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to view this course.")
 
     topics = Topic.objects.filter(course=course)
@@ -556,7 +559,7 @@ def create_topic(request, course_id):
     course = get_object_or_404(Course, id=course_id)
 
     # Check if user is a member of the group that owns the course
-    if not request.user.study_groups.filter(id=course.group.id).exists() and not request.user.is_super_admin():
+    if not request.user.study_groups.filter(id=course.group.id).exists() and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to create topics for this course.")
 
     if request.method == 'POST':
@@ -588,7 +591,7 @@ def edit_topic(request, topic_id):
     group = course.group
 
     # Check if user is a member of the group that owns the course
-    if not (request.user.is_super_admin() or request.user == group.created_by or
+    if not (request.user.is_super_admin or request.user == group.created_by or
             request.user.study_groups.filter(id=group.id).exists()):
         return HttpResponseForbidden("You don't have permission to edit this topic.")
 
@@ -619,8 +622,8 @@ def delete_topic(request, topic_id):
     group = course.group
 
     # Check if user is a member of the group that owns the course
-    if not (request.user.is_super_admin() or request.user == group.created_by or
-            (request.user.is_group_admin() and group.members.filter(id=request.user.id).exists())):
+    if not (request.user.is_super_admin or request.user == group.created_by or
+            (request.user.is_group_admin(group) and group.members.filter(id=request.user.id).exists())):
         return HttpResponseForbidden("You don't have permission to delete this topic.")
 
     if request.method == 'POST':
@@ -648,7 +651,7 @@ def topic_detail(request, topic_id):
     topic = get_object_or_404(Topic, id=topic_id)
 
     # Check if user is a member of the group that owns the course
-    if not request.user.study_groups.filter(id=topic.course.group.id).exists() and not request.user.is_super_admin():
+    if not request.user.study_groups.filter(id=topic.course.group.id).exists() and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to view this topic.")
 
     learning_files = LearningFile.objects.filter(topic=topic)
@@ -676,7 +679,7 @@ def upload_file(request, topic_id):
     topic = get_object_or_404(Topic, id=topic_id)
 
     # Check if user is a member of the group that owns the course
-    if not request.user.study_groups.filter(id=topic.course.group.id).exists() and not request.user.is_super_admin():
+    if not request.user.study_groups.filter(id=topic.course.group.id).exists() and not request.user.is_super_admin:
         return HttpResponseForbidden("You don't have permission to upload files to this topic.")
 
     if request.method == 'POST':
@@ -846,7 +849,7 @@ def generate_share_link(request, file_id):
     file = get_object_or_404(LearningFile, id=file_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or request.user == file.uploaded_by or
+    if not (request.user.is_super_admin or request.user == file.uploaded_by or
             request.user.study_groups.filter(id=file.course.group.id).exists()):
         return HttpResponseForbidden("You don't have permission to share this file.")
 
@@ -884,7 +887,7 @@ def download_file(request, file_id):
     file = get_object_or_404(LearningFile, id=file_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or
+    if not (request.user.is_super_admin or
             request.user.study_groups.filter(id=file.course.group.id).exists()):
         return HttpResponseForbidden("You don't have permission to download this file.")
 
@@ -939,7 +942,7 @@ def add_comment(request, file_id):
     file = get_object_or_404(LearningFile, id=file_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or
+    if not (request.user.is_super_admin or
             request.user.study_groups.filter(id=file.course.group.id).exists()):
         return HttpResponseForbidden("You don't have permission to comment on this file.")
 
@@ -985,7 +988,7 @@ def like_file(request, file_id):
     file = get_object_or_404(LearningFile, id=file_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or
+    if not (request.user.is_super_admin or
             request.user.study_groups.filter(id=file.course.group.id).exists()):
         return HttpResponseForbidden("You don't have permission to like this file.")
 
@@ -1042,7 +1045,7 @@ def report_file(request, file_id):
     file = get_object_or_404(LearningFile, id=file_id)
 
     # Check if user has permission to view the file
-    if not (request.user.is_super_admin() or
+    if not (request.user.is_super_admin or
             request.user.study_groups.filter(id=file.course.group.id).exists()):
         return HttpResponseForbidden("You don't have permission to report this file.")
 
@@ -1090,7 +1093,7 @@ def report_file(request, file_id):
 def manage_reports(request):
     """View to manage file reports - accessible by super admins, admins, and group leaders"""
     # Super admins see all reports
-    if request.user.is_super_admin():
+    if request.user.is_super_admin:
         reports = Report.objects.all().order_by('-created_at')
     # Regular admins see reports for their groups
     elif request.user.role == 'admin':
@@ -1112,7 +1115,7 @@ def review_report(request, report_id):
     report = get_object_or_404(Report, id=report_id)
 
     # Check if user has permission
-    if not request.user.is_super_admin() and not (
+    if not request.user.is_super_admin and not (
         # Group creator/admin permission
         request.user.role == 'admin' and report.file.course.group.created_by == request.user or
         # Group leader permission (user who created a group but isn't admin)
@@ -1229,7 +1232,7 @@ def generate_invitation(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Check if user has permission (group admin or super admin)
-    if not (request.user.is_super_admin() or group.created_by == request.user):
+    if not (request.user.is_super_admin or group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to create invitations for this group.")
 
     # Check if group is approved
@@ -1312,7 +1315,7 @@ def manage_invitations(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Check if user has permission (group admin or super admin)
-    if not (request.user.is_super_admin() or group.created_by == request.user):
+    if not (request.user.is_super_admin or group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to manage invitations for this group.")
 
     # Get all invitations for the group
@@ -1411,7 +1414,7 @@ def cancel_invitation(request, invitation_id):
     invitation = get_object_or_404(GroupInvitation, id=invitation_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or invitation.group.created_by == request.user):
+    if not (request.user.is_super_admin or invitation.group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to cancel this invitation.")
 
     # Only cancel if pending
@@ -1431,7 +1434,7 @@ def delete_invitation(request, invitation_id):
     group_id = invitation.group.id
 
     # Check if user has permission (group admin or super admin)
-    if not (request.user.is_super_admin() or invitation.group.created_by == request.user):
+    if not (request.user.is_super_admin or invitation.group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to delete this invitation.")
 
     # Store info for activity log
@@ -1458,7 +1461,7 @@ def group_leaderboard(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Check if user is a member of the group
-    if not (request.user.is_super_admin() or
+    if not (request.user.is_super_admin or
             request.user.study_groups.filter(id=group.id).exists()):
         return HttpResponseForbidden("You don't have permission to view this group's leaderboard.")
 
@@ -1497,7 +1500,7 @@ def update_leaderboards(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
     # Check if user has permission
-    if not (request.user.is_super_admin() or group.created_by == request.user):
+    if not (request.user.is_super_admin or group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to update leaderboards for this group.")
 
     # Calculate and update each type of leaderboard
@@ -1788,7 +1791,7 @@ def report_comment(request, comment_id):
 def manage_comment_reports(request):
     """View to manage comment reports - accessible by super admins, admins, and group leaders"""
     # Super admins see all reports
-    if request.user.is_super_admin():
+    if request.user.is_super_admin:
         reports = CommentReport.objects.all().order_by('-created_at')
     # Regular admins see reports for their groups
     elif request.user.role == 'admin':
@@ -1814,7 +1817,7 @@ def review_comment_report(request, report_id):
     report = get_object_or_404(CommentReport, id=report_id)
 
     # Check if user has permission
-    if not request.user.is_super_admin() and not (
+    if not request.user.is_super_admin and not (
         # Group creator/admin permission
         request.user.role == 'admin' and report.comment.file.course.group.created_by == request.user or
         # Group leader permission (user who created a group but isn't admin)

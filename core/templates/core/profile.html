@@ -1,4 +1,5 @@
 {% extends 'base/base.html' %}
+{% load group_tags %}
 
 {% block title %}My Profile | SANCTUARY{% endblock %}
 
@@ -36,10 +37,12 @@
                         <h4 class="fw-bold">{{ user.get_full_name|default:user.username }}</h4>
                         <p class="mb-2">
                             <span class="badge
-                                {% if user.role == 'super_admin' %}bg-danger
-                                {% elif user.role == 'admin' %}bg-warning
+                                {% if user.is_super_admin %}bg-danger
+                                {% elif user.created_groups.exists %}bg-warning
                                 {% else %}bg-info{% endif %} rounded-pill">
-                                {{ user.get_role_display }}
+                                {% if user.is_super_admin %}Super Admin
+                                {% elif user.created_groups.exists %}Group Admin
+                                {% else %}Member{% endif %}
                             </span>
                         </p>
                         <p class="mb-0"><i class="fas fa-envelope text-muted me-2"></i>{{ user.email }}</p>
@@ -155,12 +158,16 @@
                                     <td>
                                         {% if group.created_by == user %}
                                             <span class="badge bg-warning">Admin</span>
+                                        {% elif user|is_group_admin:group %}
+                                            <span class="badge bg-warning">Admin</span>
+                                        {% elif user|is_group_moderator:group %}
+                                            <span class="badge bg-primary">Moderator</span>
                                         {% else %}
                                             <span class="badge bg-info">Member</span>
                                         {% endif %}
                                     </td>
                                     <td>
-                                        {% if group.created_by == user %}
+                                        {% if group.created_by == user or user|is_group_admin:group %}
                                             <a href="{% url 'manage_group' group.id %}" class="btn btn-sm btn-warning">
                                                 <i class="fas fa-cog me-1"></i>Manage
                                             </a>

@@ -62,27 +62,31 @@ def get_file_type_from_extension(filename):
     return 'other'
 
 class User(AbstractUser):
-    ROLE_CHOICES = (
-        ('super_admin', 'Super Admin'),
-        ('admin', 'Admin'),
-        ('user', 'User'),
-    )
-
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    is_super_admin = models.BooleanField(default=False)
     profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True)
-    # group is not defined here because it's a ForeignKey from StudyGroup
-
-    def is_super_admin(self):
-        return self.role == 'super_admin'
-
-    def is_group_admin(self):
-        return self.role == 'admin'
-
-    def is_group_member(self):
-        return self.role == 'user'
 
     def __str__(self):
-        return f"{self.username} ({self.get_role_display()})"
+        return f"{self.username}"
+
+    def get_role_in_group(self, group):
+        """Get the user's role in a specific group"""
+        try:
+            membership = self.group_memberships.get(group=group)
+            return membership.role
+        except GroupMembership.DoesNotExist:
+            return None
+
+    def is_group_admin(self, group):
+        """Check if the user is an admin in the given group"""
+        return self.get_role_in_group(group) == 'admin'
+
+    def is_group_moderator(self, group):
+        """Check if the user is a moderator in the given group"""
+        return self.get_role_in_group(group) == 'moderator'
+
+    def is_group_member(self, group):
+        """Check if the user is a regular member in the given group"""
+        return self.get_role_in_group(group) == 'user'
 
 class StudyGroup(models.Model):
     STATUS_CHOICES = (
@@ -102,6 +106,60 @@ class StudyGroup(models.Model):
 
     def __str__(self):
         return f"{self.group_name} ({self.get_status_display()})"
+
+    def add_member(self, user, role='user'):
+        """Add a user to the group with specified role"""
+        membership, created = GroupMembership.objects.get_or_create(
+            user=user,
+            group=self,
+            defaults={'role': role}
+        )
+        if not created and membership.role != role:
+            membership.role = role
+            membership.save()
+        return membership
+
+    def remove_member(self, user):
+        """Remove a user from the group"""
+        return GroupMembership.objects.filter(user=user, group=self).delete()
+
+    def get_admins(self):
+        """Get all admin users in this group"""
+        return User.objects.filter(group_memberships__group=self, group_memberships__role='admin')
+
+    def get_moderators(self):
+        """Get all moderator users in this group"""
+        return User.objects.filter(group_memberships__group=self, group_memberships__role='moderator')
+
+    def get_regular_members(self):
+        """Get all regular members in this group"""
+        return User.objects.filter(group_memberships__group=self, group_memberships__role='user')
+
+    def get_user_role(self, user):
+        """Get the role of a specific user in this group"""
+        try:
+            membership = GroupMembership.objects.get(user=user, group=self)
+            return membership.role
+        except GroupMembership.DoesNotExist:
+            return None
+
+class GroupMembership(models.Model):
+    ROLE_CHOICES = (
+        ('admin', 'Admin'),
+        ('moderator', 'Moderator'),
+        ('user', 'User'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='group_memberships')
+    group = models.ForeignKey('StudyGroup', on_delete=models.CASCADE, related_name='memberships')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.group.group_name} ({self.get_role_display()})"
+
+    class Meta:
+        unique_together = ['user', 'group']
 
 class Course(models.Model):
     course_name = models.CharField(max_length=100)
