@@ -476,65 +476,6 @@ def group_activity(request, group_id):
     logs = ActivityLog.objects.filter(group=group).order_by('-timestamp')
     return render(request, 'core/group_activity.html', {'group': group, 'logs': logs})
 
-@admin_required
-def create_user(request, group_id):
-    group = get_object_or_404(StudyGroup, id=group_id)
-
-    # Only allow group creator to add members
-    if group.created_by != request.user and not request.user.is_super_admin:
-        return HttpResponseForbidden("You don't have permission to add members to this group.")
-
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        first_name = request.POST.get('first_name', '')
-        last_name = request.POST.get('last_name', '')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
-
-        # Basic validation
-        if User.objects.filter(username=username).exists():
-            messages.error(request, f"Username '{username}' is already taken.")
-            return render(request, 'core/create_user.html', {'group': group})
-
-        if User.objects.filter(email=email).exists():
-            messages.error(request, f"Email '{email}' is already registered.")
-            return render(request, 'core/create_user.html', {'group': group})
-
-        if password1 != password2:
-            messages.error(request, "Passwords don't match.")
-            return render(request, 'core/create_user.html', {'group': group})
-
-        if len(password1) < 8:
-            messages.error(request, "Password must be at least 8 characters long.")
-            return render(request, 'core/create_user.html', {'group': group})
-
-        # Create new user
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password1,
-            first_name=first_name,
-            last_name=last_name,
-            role='user'  # Default role for new users
-        )
-
-        # Add user to the group
-        group.members.add(user)
-
-        # Log activity
-        ActivityLog.objects.create(
-            user=request.user,
-            group=group,
-            action_type='add_member',
-            description=f"New user '{username}' was created and added to group '{group.group_name}' by {request.user.username}"
-        )
-
-        messages.success(request, f"User '{username}' created successfully and added to the group!")
-        return redirect('manage_group', group_id=group_id)
-
-    return render(request, 'core/create_user.html', {'group': group})
-
 # User Views
 @user_required
 def course_detail(request, course_id):

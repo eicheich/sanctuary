@@ -50,7 +50,6 @@ urlpatterns = [
     path('create-group/', views.create_group, name='create_group'),
     path('manage-group/<int:group_id>/', views.manage_group, name='manage_group'),
     path('add-member/<int:group_id>/', views.add_member, name='add_member'),
-    path('create-user/<int:group_id>/', views.create_user, name='create_user'),  # New URL for creating users
     path('create-course/<int:group_id>/', views.create_course, name='create_course'),
     path('group-activity/<int:group_id>/', views.group_activity, name='group_activity'),
 
