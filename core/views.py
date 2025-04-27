@@ -12,6 +12,7 @@ import os
 
 from .models import User, StudyGroup, Course, Topic, LearningFile, ActivityLog, FileInteraction, Report, Notification
 from .models import UserAchievement, CommentReport, GroupInvitation, GroupLeaderboard, LeaderboardEntry
+from .models import PersonalInvitation, InvitationUse
 from .decorators import super_admin_required, admin_required, user_required
 
 # Import additional modules for new features
@@ -1558,7 +1559,7 @@ def update_contribution_leaderboard(group):
         ).count()
 
         # Count topics created in this group
-        topic_count = Topic.objects.filter(
+        Topic.objects.filter(
             course__group=group,
             created_by=user
         ).count()

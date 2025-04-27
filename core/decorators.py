@@ -15,15 +15,18 @@ def super_admin_required(view_func):
 def admin_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
+        # Check if user is authenticated first
+        if not request.user.is_authenticated:
+            messages.error(request, 'You need to be logged in to access this page.')
+            return redirect('login')
+
         # Allow super admins
-        if request.user.is_authenticated and request.user.is_super_admin:
+        if request.user.is_super_admin:
             return view_func(request, *args, **kwargs)
 
         # Allow users who are admins of any group (created a group or have admin role)
-        if request.user.is_authenticated and (
-            request.user.created_groups.exists() or
-            GroupMembership.objects.filter(user=request.user, role='admin').exists()
-        ):
+        if request.user.created_groups.exists() or \
+           GroupMembership.objects.filter(user=request.user, role='admin').exists():
             return view_func(request, *args, **kwargs)
 
         messages.error(request, 'You do not have permission to access this page.')
@@ -47,6 +50,11 @@ def group_admin_required(group_id_kwarg='group_id'):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
+            # Check if user is authenticated first
+            if not request.user.is_authenticated:
+                messages.error(request, 'You need to be logged in to access this page.')
+                return redirect('login')
+
             # Allow super admins access to any group
             if request.user.is_super_admin:
                 return view_func(request, *args, **kwargs)

@@ -12,11 +12,8 @@
                     <p class="subtitle">{{ group.institution }}</p>
                 </div>
                 <div class="dashboard-actions">
-                    <a href="{% url 'home' %}" class="btn btn-outline-primary me-2">
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary">
                         <i class="fas fa-arrow-left me-2"></i>Back
-                    </a>
-                    <a href="{% url 'add_member' group.id %}" class="btn btn-primary">
-                        <i class="fas fa-plus me-2"></i>Add Member
                     </a>
                 </div>
             </div>
@@ -75,17 +72,6 @@
 
             <div class="content-card">
                 <div class="actions-grid">
-                    <!-- Add Member Action -->
-                    <a href="{% url 'add_member' group.id %}" class="action-card">
-                        <div class="action-icon">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div class="action-content">
-                            <h3 class="action-title">Add Member</h3>
-                            <p class="action-description">Add existing users to your group</p>
-                        </div>
-                    </a>
-
                     <!-- Add Course Action -->
                     <a href="{% url 'create_course' group.id %}" class="action-card">
                         <div class="action-icon">
@@ -186,22 +172,15 @@
                             </div>
                             {% endfor %}
                         </div>
-                        <div class="view-all-link">
-                            <a href="{% url 'add_member' group.id %}" class="btn btn-outline-primary btn-sm w-100">
-                                <i class="fas fa-user-plus me-2"></i>Add More Members
-                            </a>
-                        </div>
                         {% else %}
                         <div class="empty-state">
                             <div class="empty-icon">
                                 <i class="fas fa-users"></i>
                             </div>
                             <h3 class="empty-title">No members yet</h3>
-                            <p class="empty-description">Start adding members to collaborate in this study group</p>
+                            <p class="empty-description">Only the group creator can be a member at this time</p>
                             <div class="empty-actions">
-                                <a href="{% url 'add_member' group.id %}" class="btn btn-primary">
-                                    <i class="fas fa-user-plus me-2"></i>Add Members
-                                </a>
+                                <!-- Invitation feature disabled -->
                             </div>
                         </div>
                         {% endif %}
@@ -695,7 +674,7 @@
         font-size: 1rem;
         font-weight: 500;
         margin: 0 0 0.25rem 0;
-        color: var(--dark-color);
+        color: var (--dark-color);
     }
 
     .course-meta {
