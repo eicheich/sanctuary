@@ -1,0 +1,719 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Admin Dashboard | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header mb-4">
+        <div class="container-fluid px-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="dashboard-title">
+                    <h1>Admin Dashboard</h1>
+                    <p class="subtitle">Manage your study groups and monitor activity</p>
+                </div>
+                <div class="dashboard-actions">
+                    <a href="{% url 'create_group' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>New Group
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid px-0">
+        <!-- Stats Overview Cards -->
+        <div class="stats-overview mb-4">
+            <div class="row g-3">
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card groups-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ admin_groups.count }}</h3>
+                            <p class="stat-label">Study Groups</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card courses-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ total_courses }}</h3>
+                            <p class="stat-label">Total Courses</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card members-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-friends"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ total_members }}</h3>
+                            <p class="stat-label">Total Members</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="stat-card reports-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ pending_reports|default:"0" }}</h3>
+                            <p class="stat-label">Pending Reports</p>
+                            <a href="{% url 'manage_reports' %}" class="stat-link">Review <i class="fas fa-arrow-right ms-1"></i></a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area">
+            <!-- Study Groups Section -->
+            <section class="content-section study-groups mb-4">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-users icon-circle"></i>
+                        My Study Groups
+                    </h2>
+                    <div class="section-actions">
+                        <a href="{% url 'create_group' %}" class="btn btn-sm btn-primary">
+                            <i class="fas fa-plus me-1"></i>New Group
+                        </a>
+                    </div>
+                </div>
+
+                <div class="content-card">
+                    {% if admin_groups %}
+                        <div class="groups-table">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Group Name</th>
+                                            <th>Institution</th>
+                                            <th>Status</th>
+                                            <th>Members</th>
+                                            <th>Courses</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for group in admin_groups %}
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="group-avatar me-2">
+                                                        {{ group.group_name|first|upper }}
+                                                    </div>
+                                                    <span class="fw-medium">{{ group.group_name }}</span>
+                                                </div>
+                                            </td>
+                                            <td>{{ group.institution }}</td>
+                                            <td>
+                                                {% if group.status == 'pending' %}
+                                                    <span class="status-badge pending">Pending</span>
+                                                {% elif group.status == 'approved' %}
+                                                    <span class="status-badge approved">Approved</span>
+                                                {% else %}
+                                                    <span class="status-badge rejected">Rejected</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="members-count">{{ group.members.count }}</div>
+                                                    <div class="ms-2 members-avatars">
+                                                        {% for member in group.members.all|slice:":3" %}
+                                                            <div class="mini-avatar">{{ member.username|first|upper }}</div>
+                                                        {% endfor %}
+                                                        {% if group.members.count > 3 %}
+                                                            <div class="mini-avatar more">+{{ group.members.count|add:"-3" }}</div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="badge bg-light text-dark rounded-pill">
+                                                    <i class="fas fa-book-open me-1"></i>{{ group.courses.count }}
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="action-buttons text-end">
+                                                    {% if group.status == 'approved' %}
+                                                        <a href="{% url 'manage_group' group.id %}" class="btn btn-sm btn-primary">
+                                                            <i class="fas fa-cog me-1"></i>Manage
+                                                        </a>
+                                                        <div class="btn-group">
+                                                            <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                                                More
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{% url 'add_member' group.id %}">
+                                                                        <i class="fas fa-user-plus me-2"></i>Add Member
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{% url 'create_course' group.id %}">
+                                                                        <i class="fas fa-book me-2"></i>Add Course
+                                                                    </a>
+                                                                </li>
+                                                                <li>
+                                                                    <a class="dropdown-item" href="{% url 'group_activity' group.id %}">
+                                                                        <i class="fas fa-chart-line me-2"></i>View Activity
+                                                                    </a>
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    {% else %}
+                                                        <span class="waiting-approval">
+                                                            <i class="fas fa-clock me-1"></i>Awaiting Approval
+                                                        </span>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3 class="empty-title">No study groups yet</h3>
+                            <p class="empty-description">Create your first study group to start organizing learning materials and adding members</p>
+                            <div class="empty-actions">
+                                <a href="{% url 'create_group' %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create Your First Group
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+
+            <!-- Recent Activity Section -->
+            <section class="content-section recent-activity mb-4">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-history icon-circle info"></i>
+                        Recent Group Activity
+                    </h2>
+                </div>
+
+                <div class="content-card">
+                    {% if recent_activities %}
+                        <div class="activity-timeline">
+                            {% for activity in recent_activities %}
+                                <div class="activity-item">
+                                    <div class="activity-icon">
+                                        {% if activity.action_type == 'create_group' %}
+                                            <i class="fas fa-plus"></i>
+                                        {% elif activity.action_type == 'add_member' %}
+                                            <i class="fas fa-user-plus"></i>
+                                        {% elif activity.action_type == 'create_course' %}
+                                            <i class="fas fa-book"></i>
+                                        {% elif activity.action_type == 'create_topic' %}
+                                            <i class="fas fa-folder-plus"></i>
+                                        {% elif activity.action_type == 'upload_file' %}
+                                            <i class="fas fa-file-upload"></i>
+                                        {% else %}
+                                            <i class="fas fa-check-circle"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="activity-content">
+                                        <div class="activity-header">
+                                            <span class="activity-user">{{ activity.user.username }}</span>
+                                            <span class="activity-group">{{ activity.group.group_name }}</span>
+                                            <span class="activity-time">{{ activity.timestamp|date:"M d, Y H:i" }}</span>
+                                        </div>
+                                        <div class="activity-desc">
+                                            <span class="activity-type">{{ activity.get_action_type_display }}</span>
+                                            <p class="activity-message">{{ activity.description }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if recent_activities.count > 7 %}
+                            <div class="view-all-link mt-3">
+                                <a href="{% url 'activity_logs' %}" class="btn btn-outline-primary btn-sm">
+                                    View All Activity <i class="fas fa-arrow-right ms-1"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="empty-state small">
+                            <div class="empty-icon">
+                                <i class="fas fa-history"></i>
+                            </div>
+                            <h3 class="empty-title">No recent activity</h3>
+                            <p class="empty-description">Activity will appear here as you and your group members interact with the platform</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<!-- Modern UX Focused Styles -->
+<style>
+    :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --success-color: #4cc9f0;
+        --danger-color: #f72585;
+        --warning-color: #f8961e;
+        --info-color: #4895ef;
+        --light-color: #f8f9fa;
+        --dark-color: #212529;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        --transition: all 0.3s ease;
+    }
+
+    /* General Dashboard Styles */
+    .admin-dashboard {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
+
+    /* Dashboard Header */
+    .dashboard-header {
+        padding: 1.5rem 0 1rem 0;
+    }
+
+    .dashboard-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        color: var(--dark-color);
+    }
+
+    .dashboard-title .subtitle {
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        height: 100%;
+        transition: var(--transition);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .groups-card {
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .courses-card {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .members-card {
+        border-left: 4px solid var(--info-color);
+    }
+
+    .reports-card {
+        border-left: 4px solid var(--warning-color);
+    }
+
+    .stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .groups-card .stat-icon {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+    }
+
+    .courses-card .stat-icon {
+        background-color: rgba(76, 201, 240, 0.1);
+        color: var(--success-color);
+    }
+
+    .members-card .stat-icon {
+        background-color: rgba(72, 149, 239, 0.1);
+        color: var(--info-color);
+    }
+
+    .reports-card .stat-icon {
+        background-color: rgba(248, 150, 30, 0.1);
+        color: var(--warning-color);
+    }
+
+    .stat-icon i {
+        font-size: 1.6rem;
+    }
+
+    .stat-content {
+        flex-grow: 1;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .stat-link {
+        font-size: 0.8rem;
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        margin-top: 0.5rem;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+
+    .stat-link:hover {
+        color: var(--secondary-color);
+    }
+
+    /* Section styles */
+    .content-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+    }
+
+    .icon-circle.info {
+        background-color: rgba(72, 149, 239, 0.1);
+        color: var(--info-color);
+    }
+
+    .content-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 1.5rem;
+    }
+
+    /* Group Table Styles */
+    .groups-table th {
+        font-weight: 500;
+        color: #6c757d;
+        border-top: none;
+        border-bottom-width: 1px;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
+
+    .groups-table td {
+        padding: 1rem 0.75rem;
+        vertical-align: middle;
+    }
+
+    .group-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1rem;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .status-badge.pending {
+        background-color: rgba(248, 150, 30, 0.15);
+        color: var(--warning-color);
+    }
+
+    .status-badge.approved {
+        background-color: rgba(76, 201, 240, 0.15);
+        color: var(--success-color);
+    }
+
+    .status-badge.rejected {
+        background-color: rgba(247, 37, 133, 0.15);
+        color: var(--danger-color);
+    }
+
+    .members-avatars {
+        display: flex;
+    }
+
+    .mini-avatar {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.7rem;
+        margin-right: -8px;
+        border: 2px solid white;
+    }
+
+    .mini-avatar.more {
+        background-color: #6c757d;
+    }
+
+    .members-count {
+        font-weight: 500;
+    }
+
+    .action-buttons .btn {
+        margin-right: 0.35rem;
+    }
+
+    .action-buttons .btn:last-child {
+        margin-right: 0;
+    }
+
+    .waiting-approval {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+
+    /* Activity Timeline */
+    .activity-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .activity-item {
+        display: flex;
+        padding: 1rem;
+        border-radius: 10px;
+        background-color: #fff;
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: var(--transition);
+    }
+
+    .activity-item:hover {
+        background-color: rgba(0,0,0,0.01);
+        border-color: rgba(67, 97, 238, 0.2);
+    }
+
+    .activity-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .activity-content {
+        flex-grow: 1;
+    }
+
+    .activity-header {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-bottom: 0.35rem;
+        align-items: center;
+    }
+
+    .activity-user {
+        font-weight: 500;
+        color: var(--dark-color);
+    }
+
+    .activity-group {
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+    }
+
+    .activity-time {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .activity-desc {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .activity-type {
+        font-size: 0.75rem;
+        background-color: #f0f0f0;
+        color: #6c757d;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+        margin-top: 0.25rem;
+    }
+
+    .activity-message {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #495057;
+    }
+
+    /* Empty states */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state.small {
+        padding: 1.5rem 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state.small .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-state.small .empty-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-description {
+        color: #adb5bd;
+        margin-bottom: 1.5rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .empty-state.small .empty-description {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .view-all-link {
+        text-align: center;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 767px) {
+        .dashboard-title h1 {
+            font-size: 1.5rem;
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+        }
+
+        .stat-icon i {
+            font-size: 1.3rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+        }
+
+        .activity-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.35rem;
+        }
+
+        .activity-desc {
+            flex-direction: column;
+        }
+
+        .activity-type {
+            margin-bottom: 0.5rem;
+            margin-right: 0;
+        }
+    }
+</style>
+{% endblock %}

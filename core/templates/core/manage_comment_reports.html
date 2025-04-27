@@ -1,0 +1,111 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Manage Comment Reports | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Comment Reports</li>
+                </ol>
+            </nav>
+
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="alert alert-info" role="alert">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Admin Access</h5>
+                        <p>As a group admin, you have access to manage reported comments for your groups. Group creators are automatically granted admin privileges when their group is approved.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0"><i class="fas fa-flag me-2"></i>Comment Reports</h3>
+                    <div>
+                        <a href="{% url 'home' %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if reports %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Reported Comment</th>
+                                        <th>Reason</th>
+                                        <th>Reported By</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for report in reports %}
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                {% if report.comment.user.profile_photo %}
+                                                    <img src="{{ report.comment.user.profile_photo.url }}" alt="Profile" class="rounded-circle me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                                                {% else %}
+                                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px;">
+                                                        <span>{{ report.comment.user.username|make_list|first|upper }}</span>
+                                                    </div>
+                                                {% endif %}
+                                                <div>
+                                                    <div class="fw-bold d-flex align-items-center">
+                                                        {{ report.comment.user.username }}
+                                                        {% if report.comment.user.role == 'admin' %}
+                                                            <span class="badge bg-primary ms-2">Admin</span>
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="small text-muted">
+                                                        "{{ report.comment.content|truncatechars:50 }}"
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-warning text-dark">{{ report.get_report_type_display }}</span>
+                                        </td>
+                                        <td>{{ report.reported_by.username }}</td>
+                                        <td>{{ report.created_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if report.status == 'pending' %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% elif report.status == 'under_review' %}
+                                                <span class="badge bg-info">Under Review</span>
+                                            {% elif report.status == 'resolved' %}
+                                                <span class="badge bg-success">Resolved</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Rejected</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'review_comment_report' report_id=report.id %}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye me-1"></i>Review
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                            <h4>No comment reports to review</h4>
+                            <p>There are no comment reports that require your attention.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

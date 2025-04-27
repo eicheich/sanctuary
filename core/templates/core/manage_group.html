@@ -1,0 +1,885 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Manage Group | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="group-dashboard">
+    <header class="dashboard-header mb-4">
+        <div class="container-fluid px-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="dashboard-title">
+                    <h1>{{ group.group_name }}</h1>
+                    <p class="subtitle">{{ group.institution }}</p>
+                </div>
+                <div class="dashboard-actions">
+                    <a href="{% url 'home' %}" class="btn btn-outline-primary me-2">
+                        <i class="fas fa-arrow-left me-2"></i>Back
+                    </a>
+                    <a href="{% url 'add_member' group.id %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Member
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid px-0">
+        <!-- Stats Overview Cards -->
+        <div class="stats-overview mb-4">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="stat-card groups-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ group.members.count }}</h3>
+                            <p class="stat-label">Members</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="stat-card materials-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ group.courses.count }}</h3>
+                            <p class="stat-label">Courses</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="stat-card progress-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ group.created_at|date:"M d" }}</h3>
+                            <p class="stat-label">Created On</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Section -->
+        <section class="content-section actions mb-4">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-cog icon-circle"></i>
+                    Group Actions
+                </h2>
+                <span class="section-indicator">{{ group.status|title }}</span>
+            </div>
+
+            <div class="content-card">
+                <div class="actions-grid">
+                    <!-- Add Member Action -->
+                    <a href="{% url 'add_member' group.id %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Add Member</h3>
+                            <p class="action-description">Add existing users to your group</p>
+                        </div>
+                    </a>
+
+                    <!-- Create User Action -->
+                    <a href="{% url 'create_user' group.id %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Create User</h3>
+                            <p class="action-description">Register a new user account</p>
+                        </div>
+                    </a>
+
+                    <!-- Add Course Action -->
+                    <a href="{% url 'create_course' group.id %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Add Course</h3>
+                            <p class="action-description">Create a new learning course</p>
+                        </div>
+                    </a>
+
+                    {% if group.status == 'approved' %}
+                    <!-- Invitations Action -->
+                    <a href="{% url 'manage_invitations' group.id %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Invitations</h3>
+                            <p class="action-description">Manage group invitations</p>
+                        </div>
+                    </a>
+                    {% else %}
+                    <!-- Disabled Invitations Action -->
+                    <div class="action-card disabled">
+                        <div class="action-icon">
+                            <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Invitations</h3>
+                            <p class="action-description">Requires approved group</p>
+                        </div>
+                        <div class="action-lock">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Leaderboard Action -->
+                    <a href="{% url 'group_leaderboard' group.id %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Leaderboard</h3>
+                            <p class="action-description">Group activity rankings</p>
+                        </div>
+                    </a>
+
+                    <!-- Reports Action -->
+                    <a href="{% url 'manage_comment_reports' %}" class="action-card">
+                        <div class="action-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Reports</h3>
+                            <p class="action-description">Handle reported comments</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <div class="row g-4">
+            <!-- Left Section with Members -->
+            <div class="col-lg-6">
+                <!-- Members Section -->
+                <section class="content-section members mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-users icon-circle"></i>
+                            Members
+                        </h2>
+                        <span class="section-indicator">{{ group.members.count }} members</span>
+                    </div>
+
+                    <div class="content-card">
+                        {% if group.members.all %}
+                        <div class="members-list">
+                            {% for member in group.members.all %}
+                            <div class="member-item">
+                                <div class="member-avatar">
+                                    {{ member.username|first|upper }}
+                                </div>
+                                <div class="member-details">
+                                    <h4 class="member-name">{{ member.get_full_name|default:member.username }}</h4>
+                                    <p class="member-info">{{ member.email }}</p>
+                                </div>
+                                <div class="member-role">
+                                    {% if member.role == 'super_admin' %}
+                                        <span class="badge admin-badge">Super Admin</span>
+                                    {% elif member.role == 'admin' %}
+                                        <span class="badge admin-badge">Admin</span>
+                                    {% else %}
+                                        <span class="badge user-badge">Member</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="view-all-link">
+                            <a href="{% url 'add_member' group.id %}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-user-plus me-2"></i>Add More Members
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <h3 class="empty-title">No members yet</h3>
+                            <p class="empty-description">Start adding members to collaborate in this study group</p>
+                            <div class="empty-actions">
+                                <a href="{% url 'add_member' group.id %}" class="btn btn-primary">
+                                    <i class="fas fa-user-plus me-2"></i>Add Members
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Section with Courses -->
+            <div class="col-lg-6">
+                <!-- Courses Section -->
+                <section class="content-section courses mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-book-open icon-circle success"></i>
+                            Courses
+                        </h2>
+                        <span class="section-indicator">{{ group.courses.count }} courses</span>
+                    </div>
+
+                    <div class="content-card">
+                        {% if group.courses.all %}
+                        <div class="courses-list">
+                            {% for course in group.courses.all %}
+                            <div class="course-item">
+                                <div class="course-icon">
+                                    <i class="fas fa-book"></i>
+                                </div>
+                                <div class="course-details">
+                                    <h4 class="course-name">{{ course.course_name }}</h4>
+                                    <p class="course-meta">
+                                        <span class="course-stat"><i class="fas fa-layer-group"></i> {{ course.topics.count }} topics</span>
+                                        <span class="course-stat"><i class="fas fa-file-alt"></i> {{ course.files.count }} files</span>
+                                    </p>
+                                </div>
+                                <div class="course-action">
+                                    <a href="{% url 'course_detail' course.id %}" class="btn btn-sm btn-primary">
+                                        View
+                                    </a>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="view-all-link">
+                            <a href="{% url 'create_course' group.id %}" class="btn btn-outline-primary btn-sm w-100">
+                                <i class="fas fa-plus me-2"></i>Create New Course
+                            </a>
+                        </div>
+                        {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <h3 class="empty-title">No courses yet</h3>
+                            <p class="empty-description">Create your first course to start sharing learning materials</p>
+                            <div class="empty-actions">
+                                <a href="{% url 'create_course' group.id %}" class="btn btn-primary">
+                                    <i class="fas fa-plus me-2"></i>Create First Course
+                                </a>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- Group Details Section -->
+        <section class="content-section group-details mb-4">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-info-circle icon-circle info"></i>
+                    Group Details
+                </h2>
+            </div>
+
+            <div class="content-card">
+                <div class="details-grid">
+                    <div class="details-item">
+                        <span class="details-label">Group Name</span>
+                        <span class="details-value">{{ group.group_name }}</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Institution</span>
+                        <span class="details-value">{{ group.institution }}</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Created By</span>
+                        <span class="details-value">{{ group.created_by.get_full_name|default:group.created_by.username }}</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Created On</span>
+                        <span class="details-value">{{ group.created_at|date:"F d, Y" }}</span>
+                    </div>
+                    <div class="details-item">
+                        <span class="details-label">Status</span>
+                        <span class="details-value">
+                            {% if group.status == 'pending' %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% elif group.status == 'approved' %}
+                                <span class="badge bg-success">Approved</span>
+                            {% else %}
+                                <span class="badge bg-danger">Rejected</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div class="details-item full-width">
+                        <span class="details-label">Purpose</span>
+                        <span class="details-value purpose-text">{{ group.purpose }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<!-- Modern UX Focused Styles -->
+<style>
+    /* Root variables with soft purple theme */
+    :root {
+        --primary-color: #7B68EE;
+        --primary-dark: #6A5ACD;
+        --primary-rgb: 123, 104, 238;
+        --secondary-color: #9D8DF2;
+        --accent-color: #B19CD9;
+        --success-color: #6FCF97;
+        --danger-color: #f72585;
+        --warning-color: #FFCA28;
+        --info-color: #64B5F6;
+        --light-color: #F8F9FA;
+        --dark-color: #212529;
+        --gray-700: #495057;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(123, 104, 238, 0.08);
+        --transition: all 0.3s ease;
+    }
+
+    /* General Dashboard Styles */
+    .group-dashboard {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #F0F1FF;
+        color: #333;
+    }
+
+    /* Dashboard Header */
+    .dashboard-header {
+        padding: 1.5rem 0 1rem 0;
+    }
+
+    .dashboard-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        color: var(--primary-color);
+    }
+
+    .dashboard-title .subtitle {
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        transition: var(--transition);
+        height: 100%;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .groups-card {
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .materials-card {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .progress-card {
+        border-left: 4px solid var(--warning-color);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .groups-card .stat-icon {
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+    }
+
+    .materials-card .stat-icon {
+        background-color: rgba(111, 207, 151, 0.1);
+        color: var(--success-color);
+    }
+
+    .progress-card .stat-icon {
+        background-color: rgba(255, 202, 40, 0.1);
+        color: var(--warning-color);
+    }
+
+    .stat-icon i {
+        font-size: 1.8rem;
+    }
+
+    .stat-content {
+        flex-grow: 1;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Section styles */
+    .content-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-indicator {
+        font-size: 0.8rem;
+        background-color: rgba(123, 104, 238, 0.1);
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        color: var(--primary-color);
+    }
+
+    .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+    }
+
+    .icon-circle.success {
+        background-color: rgba(111, 207, 151, 0.1);
+        color: var(--success-color);
+    }
+
+    .icon-circle.info {
+        background-color: rgba(100, 181, 246, 0.1);
+        color: var(--info-color);
+    }
+
+    .content-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 1.5rem;
+        height: 100%;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    /* Action Grid */
+    .actions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .action-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        padding: 1.25rem;
+        box-shadow: 0 2px 8px rgba(123, 104, 238, 0.08);
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+        display: flex;
+        flex-direction: column;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .action-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        background-color: rgba(123, 104, 238, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+
+    .action-icon i {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+    }
+
+    .action-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        color: var(--dark-color);
+    }
+
+    .action-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin: 0;
+    }
+
+    .action-card.disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    .action-lock {
+        position: absolute;
+        top: 1.25rem;
+        right: 1.25rem;
+        width: 24px;
+        height: 24px;
+        background-color: rgba(0, 0, 0, 0.05);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .action-lock i {
+        color: rgba(0, 0, 0, 0.3);
+        font-size: 0.8rem;
+    }
+
+    /* Members styles */
+    .members-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .member-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .member-item:hover {
+        background-color: rgba(123, 104, 238, 0.03);
+        border-color: rgba(123, 104, 238, 0.1);
+    }
+
+    .member-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1rem;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .member-details {
+        flex-grow: 1;
+    }
+
+    .member-name {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.25rem 0;
+        color: var(--dark-color);
+    }
+
+    .member-info {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin: 0;
+    }
+
+    .member-role {
+        margin-left: auto;
+    }
+
+    .badge.admin-badge {
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+        font-weight: 500;
+        padding: 0.35rem 0.75rem;
+    }
+
+    .badge.user-badge {
+        background-color: rgba(111, 207, 151, 0.1);
+        color: var(--success-color);
+        font-weight: 500;
+        padding: 0.35rem 0.75rem;
+    }
+
+    /* Course styles */
+    .courses-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .course-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .course-item:hover {
+        background-color: rgba(123, 104, 238, 0.03);
+        border-color: rgba(123, 104, 238, 0.1);
+    }
+
+    .course-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background-color: rgba(111, 207, 151, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .course-icon i {
+        font-size: 1.25rem;
+        color: var(--success-color);
+    }
+
+    .course-details {
+        flex-grow: 1;
+    }
+
+    .course-name {
+        font-size: 1rem;
+        font-weight: 500;
+        margin: 0 0 0.25rem 0;
+        color: var(--dark-color);
+    }
+
+    .course-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin: 0;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .course-stat {
+        display: flex;
+        align-items: center;
+    }
+
+    .course-stat i {
+        margin-right: 0.3rem;
+    }
+
+    .course-action {
+        margin-left: auto;
+    }
+
+    /* Group details */
+    .details-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 1rem;
+    }
+
+    .details-item {
+        display: flex;
+        flex-direction: column;
+        padding: 0.75rem;
+        border-radius: 8px;
+        background-color: rgba(123, 104, 238, 0.02);
+    }
+
+    .details-item.full-width {
+        grid-column: 1 / -1;
+    }
+
+    .details-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+
+    .details-value {
+        font-size: 1rem;
+        font-weight: 500;
+        color: var (--dark-color);
+    }
+
+    .purpose-text {
+        white-space: pre-line;
+        font-size: 0.95rem;
+        font-weight: 400;
+    }
+
+    .view-all-link {
+        margin-top: 1rem;
+    }
+
+    /* Empty states */
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+    }
+
+    .empty-state.small {
+        padding: 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: rgba(123, 104, 238, 0.2);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state.small .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-state.small .empty-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+        max-width: 300px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .empty-actions {
+        margin-bottom: 1rem;
+    }
+
+    /* Button styling */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .actions-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .details-grid {
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .dashboard-title h1 {
+            font-size: 1.5rem;
+        }
+
+        .actions-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .details-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .course-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+
+    @media (max-width: 575px) {
+        .actions-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-icon {
+            width: 45px;
+            height: 45px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

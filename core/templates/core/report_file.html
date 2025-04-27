@@ -1,0 +1,46 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Report File: {{ file.title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="mb-3">
+                <h5>File Information</h5>
+                <p><strong>File:</strong> {{ file.title }}</p>
+                <p><strong>Type:</strong> {{ file.get_file_type_display }}</p>
+                <p><strong>Uploaded by:</strong> {{ file.uploaded_by.username }}</p>
+            </div>
+
+            <form method="post" action="{% url 'report_file' file.id %}">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label for="report_type" class="form-label">Report Type</label>
+                    <select name="report_type" id="report_type" class="form-select" required>
+                        <option value="">-- Select Report Type --</option>
+                        <option value="inappropriate_content">Inappropriate Content</option>
+                        <option value="copyright_violation">Copyright Violation</option>
+                        <option value="spam">Spam</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea name="description" id="description" rows="4"
+                      class="form-control" placeholder="Please provide details about your report..." required></textarea>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="javascript:history.back()" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-warning">Submit Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,583 @@
+{% extends 'base/base.html' %}
+
+{% block title %}{{ course.course_name }} | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="course-container py-4">
+    <div class="container">
+        <!-- Course Header -->
+        <div class="content-card mb-4">
+            <div class="row align-items-center">
+                <div class="col-lg-8 col-md-7">
+                    <nav aria-label="breadcrumb" class="mb-2">
+                        <ol class="breadcrumb small">
+                            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{% url 'manage_group' course.group.id %}">{{ course.group.group_name }}</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">{{ course.course_name }}</li>
+                        </ol>
+                    </nav>
+                    <h2 class="course-title mb-2">{{ course.course_name }}</h2>
+                    <div class="d-flex align-items-center text-muted mb-3 flex-wrap">
+                        <div class="d-flex align-items-center me-4">
+                            <i class="fas fa-users me-2"></i>
+                            <span>{{ course.group.group_name }}</span>
+                        </div>
+                        <div class="d-flex align-items-center me-4">
+                            <i class="fas fa-user me-2"></i>
+                            <span>Created by {{ course.created_by.username }}</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-calendar-alt me-2"></i>
+                            <span>{{ course.created_at|date:"M d, Y" }}</span>
+                        </div>
+                    </div>
+                    {% if course.description %}
+                        <p class="course-description mb-0">{{ course.description }}</p>
+                    {% endif %}
+                </div>
+                <div class="col-lg-4 col-md-5">
+                    <div class="action-buttons d-flex flex-wrap justify-content-md-end gap-2 mt-3 mt-md-0">
+                        <a href="{% url 'create_topic' course.id %}" class="btn btn-primary btn-icon">
+                            <i class="fas fa-plus me-2"></i>New Topic
+                        </a>
+                        {% if request.user.is_super_admin or request.user == course.group.created_by or request.user.is_group_admin and request.user in course.group.members.all %}
+                            <a href="{% url 'edit_course' course.id %}" class="btn btn-warning btn-icon">
+                                <i class="fas fa-edit me-2"></i>Edit
+                            </a>
+                            <a href="{% url 'delete_course' course.id %}" class="btn btn-danger btn-icon">
+                                <i class="fas fa-trash-alt me-2"></i>Delete
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="nav-tabs-container mb-4">
+            <ul class="nav nav-tabs nav-tabs-custom" id="courseTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="topics-tab" data-bs-toggle="tab" data-bs-target="#topics" type="button" role="tab" aria-controls="topics" aria-selected="true">
+                        <i class="fas fa-folder me-2"></i>Topics
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="all-files-tab" data-bs-toggle="tab" data-bs-target="#all-files" type="button" role="tab" aria-controls="all-files" aria-selected="false">
+                        <i class="fas fa-th-large me-2"></i>All Files
+                    </button>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="courseTabContent">
+            <!-- Topics Tab -->
+            <div class="tab-pane fade show active" id="topics" role="tabpanel" aria-labelledby="topics-tab">
+                <div class="content-card">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="section-title mb-0">
+                                <i class="fas fa-book-open icon-circle me-2"></i>Study Topics
+                            </h3>
+                            <p class="text-muted small mb-0">Organized learning materials by topic</p>
+                        </div>
+                    </div>
+
+                    {% if topics %}
+                        <div class="topics-list">
+                            {% for topic in topics %}
+                            <a href="{% url 'topic_detail' topic.id %}" class="topic-card">
+                                <div class="topic-content">
+                                    <h4 class="topic-name">{{ topic.topic_name }}</h4>
+                                    <div class="topic-meta">
+                                        <span class="topic-author">
+                                            <i class="fas fa-user me-1"></i>{{ topic.created_by.username }}
+                                        </span>
+                                        <span class="topic-files">
+                                            <i class="fas fa-file me-1"></i>{{ topic.files.count }} files
+                                        </span>
+                                        <span class="topic-date">
+                                            <i class="fas fa-calendar-alt me-1"></i>{{ topic.created_at|date:"M d, Y" }}
+                                        </span>
+                                    </div>
+                                    {% if topic.description %}
+                                        <p class="topic-description">{{ topic.description|truncatechars:120 }}</p>
+                                    {% endif %}
+                                </div>
+                                <div class="topic-arrow">
+                                    <i class="fas fa-chevron-right"></i>
+                                </div>
+                            </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state text-center py-5">
+                            <div class="empty-state-icon mb-3">📚</div>
+                            <h5 class="empty-title">No Topics Yet</h5>
+                            <p class="text-muted mb-4">This course doesn't have any topics yet.</p>
+                            <a href="{% url 'create_topic' course.id %}" class="btn btn-lg btn-success">
+                                <i class="fas fa-plus-circle me-2"></i>Create First Topic
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- All Files Tab -->
+            <div class="tab-pane fade" id="all-files" role="tabpanel" aria-labelledby="all-files-tab">
+                <div class="content-card">
+                    <div class="section-header d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h3 class="section-title mb-0">
+                                <i class="fas fa-file-alt icon-circle me-2"></i>All Learning Materials
+                            </h3>
+                            <p class="text-muted small mb-0">All files in this course regardless of topic</p>
+                        </div>
+                    </div>
+
+                    {% if course_files %}
+                        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+                            {% for file in course_files %}
+                            <div class="col">
+                                <div class="file-card h-100">
+                                    <div class="file-card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="mb-0 text-truncate file-title" title="{{ file.title }}">{{ file.title }}</h6>
+                                        <span class="badge {{ file.file_type|yesno:'bg-primary,bg-secondary' }}">{{ file.get_file_type_display }}</span>
+                                    </div>
+
+                                    <div class="file-card-body">
+                                        {% with file_url=file.file.url %}
+                                            {% if file.file_type == 'image' %}
+                                                <div class="file-preview image-preview" onclick="window.open('{{ file_url }}', '_blank')">
+                                                    <img src="{{ file_url }}" alt="{{ file.title }}" class="preview-img">
+                                                </div>
+                                            {% else %}
+                                                <div class="file-preview">
+                                                    {% if file.file_type == 'pdf' %}
+                                                        <i class="fas fa-file-pdf file-icon text-danger"></i>
+                                                    {% elif file.file_type == 'code' %}
+                                                        <i class="fas fa-file-code file-icon text-primary"></i>
+                                                    {% elif file.file_type == 'document' %}
+                                                        <i class="fas fa-file-alt file-icon text-info"></i>
+                                                    {% elif file.file_type == 'video' %}
+                                                        <i class="fas fa-file-video file-icon text-success"></i>
+                                                    {% elif file.file_type == 'audio' %}
+                                                        <i class="fas fa-file-audio file-icon text-warning"></i>
+                                                    {% else %}
+                                                        <i class="fas fa-file file-icon text-secondary"></i>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endwith %}
+
+                                        <div class="file-meta mt-auto">
+                                            <div class="topic-badge">
+                                                <span class="badge bg-info">{{ file.topic.topic_name }}</span>
+                                            </div>
+                                            <div class="file-stats">
+                                                <span class="file-stat" title="Views">
+                                                    <i class="fas fa-eye"></i> {{ file.views_count|default:"0" }}
+                                                </span>
+                                                <span class="file-stat" title="Downloads">
+                                                    <i class="fas fa-download"></i> {{ file.downloads_count|default:"0" }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="file-card-footer">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <small class="text-muted">{{ file.created_at|date:"M d, Y" }}</small>
+                                            <small class="text-muted">By {{ file.uploaded_by.username }}</small>
+                                        </div>
+                                        <div class="d-grid">
+                                            <a href="{{ file.file.url }}" class="btn btn-sm btn-primary" target="_blank">
+                                                <i class="fas fa-eye me-1"></i>View File
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state text-center py-5">
+                            <div class="empty-state-icon mb-3">📄</div>
+                            <h5 class="empty-title">No Files Found</h5>
+                            <p class="text-muted mb-4">There are no files in this course yet.</p>
+                            {% if topics %}
+                                <a href="{% url 'topic_detail' topics.0.id %}" class="btn btn-lg btn-success">
+                                    <i class="fas fa-upload me-2"></i>Upload Files
+                                </a>
+                            {% else %}
+                                <a href="{% url 'create_topic' course.id %}" class="btn btn-lg btn-success">
+                                    <i class="fas fa-plus-circle me-2"></i>Create First Topic to Share Files
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <a href="{% url 'manage_group' course.group.id %}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Group
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Root variables with soft purple theme */
+    :root {
+        --primary-color: #7B68EE;
+        --primary-dark: #6A5ACD;
+        --primary-rgb: 123, 104, 238;
+        --secondary-color: #9D8DF2;
+        --accent-color: #B19CD9;
+        --success-color: #6FCF97;
+        --danger-color: #f72585;
+        --warning-color: #FFCA28;
+        --info-color: #64B5F6;
+        --light-color: #F8F9FA;
+        --dark-color: #212529;
+        --gray-700: #495057;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(123, 104, 238, 0.08);
+        --transition: all 0.3s ease;
+    }
+
+    /* General styling */
+    .course-container {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #F0F1FF;
+        color: #333;
+    }
+
+    /* Content card styling */
+    .content-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    /* Section headers */
+    .section-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--dark-color);
+    }
+
+    .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Course header styling */
+    .course-title {
+        font-weight: 700;
+        color: var(--primary-color);
+    }
+
+    /* Custom tabs styling */
+    .nav-tabs-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 0.5rem;
+    }
+
+    .nav-tabs-custom {
+        border-bottom: none;
+    }
+
+    .nav-tabs-custom .nav-link {
+        border: none;
+        color: var(--gray-700);
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    .nav-tabs-custom .nav-link:hover:not(.active) {
+        color: var(--primary-color);
+        background-color: rgba(123, 104, 238, 0.1);
+    }
+
+    .nav-tabs-custom .nav-link.active {
+        color: var(--primary-color);
+        background-color: rgba(123, 104, 238, 0.1);
+        font-weight: 600;
+    }
+
+    /* Topics list styling */
+    .topics-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .topic-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 6px rgba(123, 104, 238, 0.05);
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .topic-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(123, 104, 238, 0.1);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .topic-content {
+        flex: 1;
+    }
+
+    .topic-name {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .topic-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        color: #6c757d;
+        font-size: 0.85rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .topic-description {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    .topic-arrow {
+        color: var(--primary-color);
+        font-size: 1.2rem;
+    }
+
+    .topic-arrow i {
+        transition: var(--transition);
+    }
+
+    .topic-card:hover .topic-arrow i {
+        transform: translateX(4px);
+    }
+
+    /* File cards */
+    .file-card {
+        display: flex;
+        flex-direction: column;
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: 0 2px 6px rgba(123, 104, 238, 0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        overflow: hidden;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .file-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .file-card-header {
+        background-color: rgba(123, 104, 238, 0.03);
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .file-title {
+        max-width: 200px;
+        color: var(--dark-color);
+        font-weight: 500;
+    }
+
+    .file-card-body {
+        flex: 1;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .file-card-footer {
+        padding: 1rem;
+        background-color: rgba(123, 104, 238, 0.02);
+        border-top: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    /* File preview styles */
+    .file-preview {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 180px;
+        background-color: #f8f9fa;
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+
+    .image-preview {
+        cursor: pointer;
+        position: relative;
+    }
+
+    .preview-img {
+        max-height: 100%;
+        max-width: 100%;
+        object-fit: contain;
+    }
+
+    .file-icon {
+        font-size: 3.5rem;
+    }
+
+    /* File metadata */
+    .file-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: auto;
+    }
+
+    .topic-badge .badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .file-stats {
+        display: flex;
+        gap: 0.75rem;
+    }
+
+    .file-stat {
+        display: inline-flex;
+        align-items: center;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    .file-stat i {
+        margin-right: 0.25rem;
+        color: var(--primary-color);
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        padding: 2rem 0;
+    }
+
+    .empty-state-icon {
+        font-size: 3.5rem;
+        margin-bottom: 1rem;
+        color: rgba(123, 104, 238, 0.3);
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    /* Button styling */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+        border-color: var(--success-color);
+    }
+
+    /* Action buttons */
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Badge styling */
+    .badge.bg-primary {
+        background-color: var(--primary-color) !important;
+    }
+
+    .bg-info {
+        background-color: var(--info-color) !important;
+    }
+
+    /* Media queries */
+    @media (max-width: 767px) {
+        .content-card {
+            padding: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+        }
+
+        .topic-meta {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Image loading and error handling
+        const allImages = document.querySelectorAll('img');
+
+        allImages.forEach((img) => {
+            // Handle error for any image that fails to load
+            img.onerror = function() {
+                const iconEl = document.createElement('i');
+                iconEl.className = 'fas fa-image text-secondary';
+                iconEl.style.fontSize = '3rem';
+                if (img.parentNode) {
+                    img.parentNode.replaceChild(iconEl, img);
+                }
+            };
+        });
+    });
+</script>
+{% endblock %}

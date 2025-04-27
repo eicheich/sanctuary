@@ -1,0 +1,114 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Shared File: {{ file.title }}</h4>
+            <div>
+                <span class="badge bg-info text-dark">{{ file.get_file_type_display }}</span>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if file.description %}
+            <div class="mb-3">
+                <h5>Description:</h5>
+                <p>{{ file.description }}</p>
+            </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <p><strong>Uploaded by:</strong> {{ file.uploaded_by.username }}</p>
+                <p><strong>Date uploaded:</strong> {{ file.created_at|date:"F d, Y" }}</p>
+                <p><strong>Views:</strong> {{ file.views_count }}</p>
+                <p><strong>Downloads:</strong> {{ file.downloads_count }}</p>
+            </div>
+
+            <div class="mb-3">
+                {% if file.file_type == 'image' %}
+                    <div class="text-center">
+                        <img src="{{ file.file.url }}" class="img-fluid rounded" style="max-height: 500px;" alt="{{ file.title }}">
+                    </div>
+                {% elif file.file_type == 'pdf' %}
+                    <div class="ratio ratio-16x9">
+                        <embed src="{{ file.file.url }}" type="application/pdf" width="100%" height="600px" />
+                    </div>
+                {% else %}
+                    <p class="text-center">
+                        <i class="bi bi-file-earmark fs-1"></i><br>
+                        File preview not available
+                    </p>
+                {% endif %}
+            </div>
+
+            <div class="d-flex justify-content-center">
+                {% if user.is_authenticated %}
+                <a href="{% url 'download_file' file.id %}" class="btn btn-primary">
+                    <i class="bi bi-download"></i> Download
+                </a>
+                {% else %}
+                <a href="{{ file.file.url }}" class="btn btn-primary" download>
+                    <i class="bi bi-download"></i> Download
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% if user.is_authenticated %}
+        <div class="card-footer">
+            <div class="comments-section mt-3">
+                <h5>Comments</h5>
+                <div class="comment-list mb-3">
+                    {% for interaction in file.interactions.all %}
+                        {% if interaction.interaction_type == 'comment' %}
+                            <div class="comment-item border-bottom py-2">
+                                <div class="d-flex justify-content-between">
+                                    <div class="user-info">
+                                        <strong>{{ interaction.user.username }}</strong>
+                                        <small class="text-muted">{{ interaction.created_at|date:"M d, Y H:i" }}</small>
+                                    </div>
+                                </div>
+                                <div class="comment-content mt-1">
+                                    {{ interaction.content }}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <p class="text-muted">No comments yet.</p>
+                    {% endfor %}
+                </div>
+
+                <form action="{% url 'add_comment' file.id %}" method="post">
+                    {% csrf_token %}
+                    <div class="input-group mb-3">
+                        <input type="text" name="comment" class="form-control" placeholder="Add a comment...">
+                        <button type="submit" class="btn btn-primary">Post</button>
+                    </div>
+                </form>
+
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <a href="{% url 'like_file' file.id %}" class="btn btn-sm {% if user in liked_users %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                            <i class="bi bi-heart{% if user in liked_users %}-fill{% endif %}"></i>
+                            {% with like_count=0 %}
+                                {% for interaction in file.interactions.all %}
+                                    {% if interaction.interaction_type == 'like' %}
+                                        {% with like_count=like_count|add:1 %}{% endwith %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ like_count }}
+                            {% endwith %}
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{% url 'report_file' file.id %}" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-flag"></i> Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

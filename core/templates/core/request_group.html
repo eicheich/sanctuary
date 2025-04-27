@@ -1,0 +1,80 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Request Study Group | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10 col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Request a Study Group</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle me-2"></i> Create a study group request to start collaborating with your peers. Our administrators will review your request.</p>
+                    </div>
+
+                    <!-- New warning about proper usage -->
+                    <div class="alert alert-warning">
+                        <h5><i class="fas fa-exclamation-triangle me-2"></i>Important Notice:</h5>
+                        <p>By submitting this request, you agree to the following:</p>
+                        <ul>
+                            <li>Study groups are for <strong>academic and educational purposes only</strong>.</li>
+                            <li>Sharing of inappropriate, copyrighted, or non-academic content is strictly prohibited.</li>
+                            <li>All activities within study groups should comply with academic integrity standards.</li>
+                            <li>The platform administrators reserve the right to remove content or close groups that violate these terms.</li>
+                        </ul>
+                        <p class="mb-0">Misuse of study groups may result in account suspension or termination.</p>
+                    </div>
+
+                    {% if messages %}
+                    <div class="mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="group_name" class="form-label">Group Name*</label>
+                            <input type="text" class="form-control" id="group_name" name="group_name" required>
+                            <small class="form-text text-muted">Choose a clear, descriptive name for your study group</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="institution" class="form-label">Institution/Organization*</label>
+                            <input type="text" class="form-control" id="institution" name="institution" required>
+                            <small class="form-text text-muted">School, university, or organization name</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Purpose*</label>
+                            <textarea class="form-control" id="purpose" name="purpose" rows="4" required></textarea>
+                            <small class="form-text text-muted">Describe the purpose of your study group and how you plan to use it</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="agree_terms" name="agree_terms" required>
+                                <label class="form-check-label" for="agree_terms">
+                                    I understand and agree that this study group will be used for proper academic purposes only
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Submit Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

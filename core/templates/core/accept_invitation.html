@@ -1,0 +1,608 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Join Study Group | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="invitation-container">
+                {% if invitation.is_valid %}
+                    <div class="invitation-envelope">
+                        <div class="envelope-top">
+                            <div class="envelope-flap"></div>
+                            <div class="envelope-lid"></div>
+                        </div>
+                        <div class="envelope-body">
+                            <div class="envelope-content">
+                                <div class="invitation-card">
+                                    <div class="invitation-header">
+                                        <div class="inviter-avatar">
+                                            {{ invitation.created_by.username|first|upper }}
+                                        </div>
+                                        <div class="inviter-info">
+                                            <h5 class="inviter-name">{{ invitation.created_by.get_full_name|default:invitation.created_by.username }}</h5>
+                                            <p class="inviter-meta">invites you to join</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="invitation-body">
+                                        <h1 class="group-name">{{ invitation.group.group_name }}</h1>
+                                        <p class="group-institution">{{ invitation.group.institution }}</p>
+                                        <div class="group-purpose">
+                                            <div class="purpose-label">Group Purpose:</div>
+                                            <div class="purpose-text">{{ invitation.group.purpose }}</div>
+                                        </div>
+                                        <div class="group-stats">
+                                            <div class="stat-item">
+                                                <i class="fas fa-users"></i>
+                                                <span>{{ invitation.group.members.count }} members</span>
+                                            </div>
+                                            <div class="stat-item">
+                                                <i class="fas fa-book"></i>
+                                                <span>{{ invitation.group.courses.count }} courses</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Multi-use invitation info -->
+                                        <div class="multi-use-info">
+                                            {% if invitation.usage_count > 0 %}
+                                                <div class="usage-indicator">
+                                                    <i class="fas fa-user-check"></i>
+                                                    <span>{{ invitation.usage_count }} {% if invitation.usage_count == 1 %}person{% else %}people{% endif %} already joined</span>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if invitation.expires_at %}
+                                                <div class="invitation-expiry">
+                                                    <i class="fas fa-clock"></i>
+                                                    <span>Expires on {{ invitation.expires_at|date:"F j, Y" }}</span>
+                                                </div>
+                                            {% endif %}
+
+                                            {% if invitation.max_uses %}
+                                                <div class="remaining-uses">
+                                                    <i class="fas fa-ticket-alt"></i>
+                                                    <span>{{ invitation.max_uses|add:-invitation.usage_count }} spots remaining</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+
+                                    {% if not user.is_authenticated %}
+                                        <div class="invitation-action login-required">
+                                            <div class="login-message">
+                                                <i class="fas fa-info-circle me-2"></i>
+                                                <span>Please log in or create an account to join this group</span>
+                                            </div>
+                                            <div class="mt-3 d-grid gap-2 d-md-flex justify-content-md-center">
+                                                <a href="{% url 'login' %}?next={{ request.path }}" class="btn btn-primary me-md-2">
+                                                    <i class="fas fa-sign-in-alt me-2"></i>Log In
+                                                </a>
+                                                <a href="{% url 'register' %}?next={{ request.path }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-user-plus me-2"></i>Register
+                                                </a>
+                                            </div>
+                                        </div>
+                                    {% else %}
+                                        <div class="invitation-action">
+                                            <form method="POST" class="d-grid gap-3">
+                                                {% csrf_token %}
+                                                <button type="submit" name="action" value="accept" class="btn btn-primary btn-lg">
+                                                    <i class="fas fa-check-circle me-2"></i>Accept & Join Group
+                                                </button>
+                                                <a href="{% url 'home' %}" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-times-circle me-2"></i>Decline Invitation
+                                                </a>
+                                            </form>
+                                        </div>
+                                    {% endif %}
+
+                                    <div class="invitation-footer">
+                                        <div class="what-happens">
+                                            <h6><i class="fas fa-info-circle me-2"></i>What happens when you join?</h6>
+                                            <ul>
+                                                <li>You'll get access to all study materials in this group</li>
+                                                <li>You can collaborate with other members</li>
+                                                <li>You can share your own learning files with the group</li>
+                                            </ul>
+                                        </div>
+
+                                        <!-- Recent joiners -->
+                                        {% if invitation.uses.all %}
+                                        <div class="recent-joiners">
+                                            <h6><i class="fas fa-users me-2"></i>Recently joined</h6>
+                                            <div class="joiner-list">
+                                                {% for use in invitation.uses.all|slice:":5" %}
+                                                    <div class="joiner-avatar" title="{{ use.user.username }}" data-bs-toggle="tooltip">
+                                                        {% if use.user.profile_photo %}
+                                                            <img src="{{ use.user.profile_photo.url }}" alt="{{ use.user.username }}">
+                                                        {% else %}
+                                                            <span>{{ use.user.username|first|upper }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endfor %}
+                                                {% if invitation.uses.all.count > 5 %}
+                                                    <div class="joiner-avatar more-joiners">
+                                                        <span>+{{ invitation.uses.all.count|add:"-5" }}</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% elif invitation.status == 'revoked' %}
+                    <div class="invitation-status-card revoked">
+                        <div class="status-icon">
+                            <i class="fas fa-ban"></i>
+                        </div>
+                        <h2 class="status-title">Invitation Revoked</h2>
+                        <p class="status-message">This invitation has been revoked by the group administrator. Please contact them for a new invitation if you want to join.</p>
+                        <a href="{% url 'landing_page' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-home me-2"></i>Go to Home
+                        </a>
+                    </div>
+                {% elif invitation.status == 'expired' or invitation.is_expired %}
+                    <div class="invitation-status-card expired">
+                        <div class="status-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <h2 class="status-title">Invitation Expired</h2>
+                        <p class="status-message">This invitation is no longer valid. Please contact the group administrator for a new invitation.</p>
+                        <a href="{% url 'landing_page' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-home me-2"></i>Go to Home
+                        </a>
+                    </div>
+                {% elif invitation.max_uses is not None and invitation.usage_count >= invitation.max_uses %}
+                    <div class="invitation-status-card full">
+                        <div class="status-icon">
+                            <i class="fas fa-user-slash"></i>
+                        </div>
+                        <h2 class="status-title">Maximum Uses Reached</h2>
+                        <p class="status-message">This invitation has reached its maximum number of uses. Please contact the group administrator for a new invitation.</p>
+                        <a href="{% url 'landing_page' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-home me-2"></i>Go to Home
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="invitation-status-card invalid">
+                        <div class="status-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <h2 class="status-title">Invalid Invitation</h2>
+                        <p class="status-message">This invitation is no longer valid or has been cancelled.</p>
+                        <a href="{% url 'landing_page' %}" class="btn btn-primary mt-3">
+                            <i class="fas fa-home me-2"></i>Go to Home
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Soft purple theme variables */
+    :root {
+        --primary-color: #7B68EE;
+        --primary-dark: #6A5ACD;
+        --primary-light: rgba(123, 104, 238, 0.1);
+        --secondary-color: #9D8DF2;
+        --accent-color: #B19CD9;
+        --success-color: #6FCF97;
+        --warning-color: #FFCA28;
+        --danger-color: #f72585;
+        --border-radius: 12px;
+        --box-shadow: 0 8px 30px rgba(123, 104, 238, 0.15);
+    }
+
+    /* Envelope styling */
+    .invitation-container {
+        perspective: 1000px;
+        margin: 0 auto;
+        max-width: 600px;
+    }
+
+    .invitation-envelope {
+        position: relative;
+        transform-style: preserve-3d;
+        animation: openEnvelope 1.5s forwards;
+    }
+
+    .envelope-top {
+        position: relative;
+        height: 120px;
+        overflow: hidden;
+    }
+
+    .envelope-flap {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 100px;
+        background: linear-gradient(135deg, #c4bdff 0%, #9d8df2 100%);
+        transform-origin: bottom;
+        z-index: 3;
+        clip-path: polygon(0 0, 50% 100%, 100% 0, 100% 100%, 0 100%);
+        animation: openFlap 1.5s forwards;
+        box-shadow: 0 -5px 10px rgba(0,0,0,0.1) inset;
+    }
+
+    .envelope-lid {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 40px;
+        background: #9d8df2;
+        z-index: 1;
+    }
+
+    .envelope-body {
+        position: relative;
+        background: linear-gradient(150deg, #9d8df2, #7B68EE);
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 2rem;
+        z-index: 2;
+        min-height: 500px;
+        overflow: hidden;
+    }
+
+    .envelope-content {
+        transform: translateY(0px);
+        animation: slideUpContent 1.5s forwards;
+        animation-delay: 0.5s;
+        opacity: 0;
+    }
+
+    /* Invitation card styling */
+    .invitation-card {
+        background-color: #fff;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .invitation-header {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background-color: var(--primary-light);
+        border-bottom: 1px solid rgba(123, 104, 238, 0.1);
+    }
+
+    .inviter-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .inviter-name {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .inviter-meta {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    .invitation-body {
+        padding: 2rem;
+        text-align: center;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .group-name {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-dark);
+        margin-bottom: 0.5rem;
+        line-height: 1.2;
+    }
+
+    .group-institution {
+        font-size: 1.1rem;
+        color: #495057;
+        margin-bottom: 1.5rem;
+    }
+
+    .group-purpose {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1.5rem;
+        text-align: left;
+    }
+
+    .purpose-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: #495057;
+        margin-bottom: 0.5rem;
+    }
+
+    .purpose-text {
+        font-size: 0.95rem;
+        line-height: 1.5;
+        color: #6c757d;
+    }
+
+    .group-stats {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        color: #495057;
+        font-size: 0.9rem;
+    }
+
+    .stat-item i {
+        color: var(--primary-color);
+        margin-right: 0.5rem;
+        font-size: 1.1rem;
+    }
+
+    /* Multi-use invitation info */
+    .multi-use-info {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .usage-indicator, .invitation-expiry, .remaining-uses {
+        display: inline-flex;
+        align-items: center;
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        padding: 0.5rem 0.75rem;
+        border-radius: 50px;
+        font-size: 0.85rem;
+    }
+
+    .usage-indicator i, .invitation-expiry i, .remaining-uses i {
+        margin-right: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .invitation-action {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .login-required {
+        padding: 1.5rem 2rem;
+    }
+
+    .login-message {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
+    .invitation-footer {
+        padding: 1.5rem 2rem;
+        background-color: #f8f9fa;
+    }
+
+    .what-happens h6 {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+
+    .what-happens ul {
+        color: #6c757d;
+        font-size: 0.9rem;
+        padding-left: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .what-happens ul li {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Recent joiners */
+    .recent-joiners {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .recent-joiners h6 {
+        display: flex;
+        align-items: center;
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 1rem;
+    }
+
+    .joiner-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .joiner-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        overflow: hidden;
+        background-color: var(--secondary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
+
+    .joiner-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .more-joiners {
+        background-color: #e9ecef;
+        color: #6c757d;
+    }
+
+    /* Status cards */
+    .invitation-status-card {
+        background-color: #fff;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 3rem 2rem;
+        text-align: center;
+    }
+
+    .status-icon {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .revoked .status-icon {
+        color: var(--danger-color);
+    }
+
+    .expired .status-icon {
+        color: var(--warning-color);
+    }
+
+    .full .status-icon {
+        color: var(--secondary-color);
+    }
+
+    .invalid .status-icon {
+        color: var(--danger-color);
+    }
+
+    .status-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .status-message {
+        color: #6c757d;
+        max-width: 400px;
+        margin: 0 auto 1.5rem auto;
+    }
+
+    /* Animations */
+    @keyframes openEnvelope {
+        0% {
+            transform: rotateX(0deg);
+        }
+        30% {
+            transform: rotateX(30deg);
+        }
+        100% {
+            transform: rotateX(0deg);
+        }
+    }
+
+    @keyframes openFlap {
+        0% {
+            transform: rotateX(0deg);
+        }
+         30% {
+            transform: rotateX(-180deg);
+            z-index: 3;
+        }
+        100% {
+            transform: rotateX(-180deg);
+            z-index: 1;
+        }
+    }
+
+    @keyframes slideUpContent {
+        0% {
+            transform: translateY(40px);
+            opacity: 0;
+        }
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    /* Button styling */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 767px) {
+        .group-name {
+            font-size: 2rem;
+        }
+
+        .group-stats {
+            flex-direction: column;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .multi-use-info {
+            flex-direction: column;
+            align-items: center;
+        }
+    }
+</style>
+
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        });
+    });
+</script>
+{% endblock %}

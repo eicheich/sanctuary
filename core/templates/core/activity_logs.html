@@ -1,0 +1,48 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Activity Logs | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">System Activity Logs</h1>
+
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Platform Activity History</h5>
+        </div>
+        <div class="card-body">
+            {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Group</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr>
+                                <td>{{ log.timestamp|date:"M d, Y H:i" }}</td>
+                                <td>{{ log.user.username }}</td>
+                                <td><span class="badge bg-secondary">{{ log.get_action_type_display }}</span></td>
+                                <td>{{ log.group.group_name|default:"N/A" }}</td>
+                                <td>{{ log.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-center">No activity logs found.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'home' %}" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

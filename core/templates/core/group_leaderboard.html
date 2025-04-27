@@ -1,0 +1,1168 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Leaderboard | {{ group.group_name }} | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="leaderboard-page">
+    <!-- Page Header with Breadcrumb -->
+    <header class="page-header">
+        <div class="container">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'course_detail' course_id=group.courses.first.id %}">{{ group.group_name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Leaderboard</li>
+                </ol>
+            </nav>
+
+            <div class="header-content">
+                <div class="header-title">
+                    <h1>{{ group.group_name }} Leaderboard</h1>
+                    <p class="header-subtitle">Top contributors and most active members in your study group</p>
+                </div>
+                {% if user.is_super_admin or group.created_by == user %}
+                <div class="header-actions">
+                    <a href="{% url 'update_leaderboards' group_id=group.id %}" class="btn btn-primary">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh Leaderboard
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Achievement Titles Section -->
+        <section class="achievement-section mb-4">
+            <div class="card">
+                <div class="card-header bg-gradient-primary">
+                    <h2 class="section-title">Achievement Titles</h2>
+                </div>
+                <div class="card-body">
+                    <div class="achievements-grid">
+                        {% if achievements %}
+                            {% for achievement in achievements %}
+                                <div class="achievement-item">
+                                    <div class="achievement-icon">
+                                        {% if achievement.achievement_type == 'active_user' %}
+                                            <i class="fas fa-bolt"></i>
+                                        {% elif achievement.achievement_type == 'contributor' %}
+                                            <i class="fas fa-crown"></i>
+                                        {% elif achievement.achievement_type == 'file_uploader' %}
+                                            <i class="fas fa-file-upload"></i>
+                                        {% elif achievement.achievement_type == 'popular_content' %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="fas fa-award"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="achievement-content">
+                                        <h3 class="achievement-title">{{ achievement.title }}</h3>
+                                        <div class="achievement-user">
+                                            <span class="user-label">Awarded to:</span>
+                                            <span class="user-name">{{ achievement.user.get_full_name|default:achievement.user.username }}</span>
+                                        </div>
+                                        <p class="achievement-desc">{{ achievement.description }}</p>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-award"></i>
+                                </div>
+                                <h3 class="empty-title">No achievements yet</h3>
+                                <p class="empty-desc">Keep participating to earn achievements!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Leaderboard Component -->
+        <section class="leaderboard-section mb-4">
+            <div class="leaderboard-container">
+                <div class="leaderboard-tabs">
+                    <button class="leaderboard-tab active" data-tab="activity">Most Active</button>
+                    <button class="leaderboard-tab" data-tab="contribution">Top Contributors</button>
+                    <button class="leaderboard-tab" data-tab="files">Most Files</button>
+                    <button class="leaderboard-tab" data-tab="downloads">Most Downloaded</button>
+                </div>
+
+                <!-- Activity Leaderboard -->
+                <div class="leaderboard-content active" id="activity-leaderboard">
+                    {% with leaderboard=leaderboards.activity %}
+                    {% if leaderboard.entries %}
+                        <div class="leaderboard-podium">
+                            <!-- 2nd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 2 %}
+                                    <div class="podium-item second-place">
+                                        <div class="crown silver"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">2</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column silver"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 1st Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 1 %}
+                                    <div class="podium-item first-place">
+                                        <div class="crown gold"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">1</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column gold"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 3rd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 3 %}
+                                    <div class="podium-item third-place">
+                                        <div class="crown bronze"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">3</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column bronze"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Remaining rankings -->
+                        <div class="ranking-list">
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank > 3 %}
+                                    <div class="ranking-item">
+                                        <div class="ranking-position">{{ entry.rank }}</div>
+                                        <div class="ranking-user">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="ranking-avatar">
+                                            {% else %}
+                                                <div class="ranking-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="ranking-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                        </div>
+                                        <div class="ranking-score">{{ entry.score }}</div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3 class="empty-title">No activity data yet</h3>
+                            <p class="empty-desc">Activity data will appear as members interact with the group</p>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- Contribution Leaderboard -->
+                <div class="leaderboard-content" id="contribution-leaderboard">
+                    {% with leaderboard=leaderboards.contribution %}
+                    {% if leaderboard.entries %}
+                        <div class="leaderboard-podium">
+                            <!-- Similar to activity leaderboard structure -->
+                            <!-- 2nd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 2 %}
+                                    <div class="podium-item second-place">
+                                        <div class="crown silver"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">2</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column silver"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 1st Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 1 %}
+                                    <div class="podium-item first-place">
+                                        <div class="crown gold"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">1</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column gold"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 3rd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 3 %}
+                                    <div class="podium-item third-place">
+                                        <div class="crown bronze"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">3</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} points</div>
+                                        </div>
+                                        <div class="podium-column bronze"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Remaining rankings -->
+                        <div class="ranking-list">
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank > 3 %}
+                                    <div class="ranking-item">
+                                        <div class="ranking-position">{{ entry.rank }}</div>
+                                        <div class="ranking-user">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="ranking-avatar">
+                                            {% else %}
+                                                <div class="ranking-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="ranking-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                        </div>
+                                        <div class="ranking-score">{{ entry.score }}</div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                            <h3 class="empty-title">No contribution data yet</h3>
+                            <p class="empty-desc">Contribution scores are based on files uploaded and topics created</p>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- Files Leaderboard -->
+                <div class="leaderboard-content" id="files-leaderboard">
+                    {% with leaderboard=leaderboards.files %}
+                    {% if leaderboard.entries %}
+                        <div class="leaderboard-podium">
+                            <!-- Similar to above structure for files leaderboard -->
+                            <!-- 2nd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 2 %}
+                                    <div class="podium-item second-place">
+                                        <div class="crown silver"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">2</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} files</div>
+                                        </div>
+                                        <div class="podium-column silver"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 1st Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 1 %}
+                                    <div class="podium-item first-place">
+                                        <div class="crown gold"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">1</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} files</div>
+                                        </div>
+                                        <div class="podium-column gold"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 3rd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 3 %}
+                                    <div class="podium-item third-place">
+                                        <div class="crown bronze"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">3</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} files</div>
+                                        </div>
+                                        <div class="podium-column bronze"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Remaining rankings -->
+                        <div class="ranking-list">
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank > 3 %}
+                                    <div class="ranking-item">
+                                        <div class="ranking-position">{{ entry.rank }}</div>
+                                        <div class="ranking-user">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="ranking-avatar">
+                                            {% else %}
+                                                <div class="ranking-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="ranking-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                        </div>
+                                        <div class="ranking-score">{{ entry.score }} files</div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <h3 class="empty-title">No files data yet</h3>
+                            <p class="empty-desc">This leaderboard shows who has contributed the most files</p>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+
+                <!-- Downloads Leaderboard -->
+                <div class="leaderboard-content" id="downloads-leaderboard">
+                    {% with leaderboard=leaderboards.downloads %}
+                    {% if leaderboard.entries %}
+                        <div class="leaderboard-podium">
+                            <!-- Similar to above structure for downloads leaderboard -->
+                            <!-- 2nd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 2 %}
+                                    <div class="podium-item second-place">
+                                        <div class="crown silver"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">2</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} downloads</div>
+                                        </div>
+                                        <div class="podium-column silver"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 1st Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 1 %}
+                                    <div class="podium-item first-place">
+                                        <div class="crown gold"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">1</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} downloads</div>
+                                        </div>
+                                        <div class="podium-column gold"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+
+                            <!-- 3rd Place -->
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank == 3 %}
+                                    <div class="podium-item third-place">
+                                        <div class="crown bronze"></div>
+                                        <div class="podium-avatar-container">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="podium-avatar">
+                                            {% else %}
+                                                <div class="podium-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="podium-rank">3</div>
+                                        </div>
+                                        <div class="podium-info">
+                                            <div class="podium-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                            <div class="podium-score">{{ entry.score }} downloads</div>
+                                        </div>
+                                        <div class="podium-column bronze"></div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- Remaining rankings -->
+                        <div class="ranking-list">
+                            {% for entry in leaderboard.entries %}
+                                {% if entry.rank > 3 %}
+                                    <div class="ranking-item">
+                                        <div class="ranking-position">{{ entry.rank }}</div>
+                                        <div class="ranking-user">
+                                            {% if entry.user.profile_photo %}
+                                                <img src="{{ entry.user.profile_photo.url }}" alt="{{ entry.user.username }}" class="ranking-avatar">
+                                            {% else %}
+                                                <div class="ranking-avatar-placeholder">
+                                                    {{ entry.user.username|make_list|first|upper }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="ranking-name">{{ entry.user.get_full_name|default:entry.user.username }}</div>
+                                        </div>
+                                        <div class="ranking-score">{{ entry.score }} downloads</div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <div class="empty-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <h3 class="empty-title">No download data yet</h3>
+                            <p class="empty-desc">This leaderboard shows whose files have been downloaded the most</p>
+                        </div>
+                    {% endif %}
+                    {% endwith %}
+                </div>
+            </div>
+
+            <div class="card mt-4 leaderboard-info-card">
+                <div class="card-body">
+                    <h3>How the Leaderboard Works</h3>
+                    <div class="leaderboard-info">
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Most Active</h4>
+                                <p>Based on user actions like commenting, uploading, and overall participation</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-crown"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Top Contributors</h4>
+                                <p>Based on topics created (3 pts each) and files uploaded (1 pt each)</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-file-upload"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Most Files</h4>
+                                <p>Based on total number of files uploaded</p>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Most Downloaded</h4>
+                                <p>Based on how many times a user's files have been downloaded</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-muted text-center">
+                    <p class="mb-0">Leaderboards are updated periodically by group administrators</p>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<style>
+    /* Variables */
+    :root {
+        --primary-color: #4361ee;
+        --secondary-color: #3f37c9;
+        --success-color: #4cc9f0;
+        --danger-color: #f72585;
+        --warning-color: #f8961e;
+        --info-color: #4895ef;
+        --light-color: #f8f9fa;
+        --dark-color: #212529;
+        --gold-color: #ffd700;
+        --silver-color: #c0c0c0;
+        --bronze-color: #cd7f32;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        --transition: all 0.3s ease;
+    }
+
+    /* General Page Styles */
+    .leaderboard-page {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #f8f9fa;
+        color: #333;
+    }
+
+    /* Page Header */
+    .page-header {
+        padding: 2rem 0 1.5rem 0;
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        margin-bottom: 2rem;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .header-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .header-subtitle {
+        opacity: 0.8;
+        margin: 0;
+    }
+
+    .breadcrumb {
+        background: transparent;
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .breadcrumb-item a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+    }
+
+    .breadcrumb-item.active {
+        color: white;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        color: rgba(255, 255, 255, 0.5);
+    }
+
+    /* Achievement Section */
+    .achievement-section .card-header {
+        background: linear-gradient(135deg, #7209b7 0%, #3f37c9 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+    }
+
+    .section-title {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    .achievements-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+        padding: 1rem 0;
+    }
+
+    .achievement-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        background-color: #fff;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        transition: var(--transition);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .achievement-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+
+    .achievement-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        font-size: 1.5rem;
+        background-color: rgba(114, 9, 183, 0.1);
+        color: #7209b7;
+    }
+
+    .achievement-content {
+        flex-grow: 1;
+    }
+
+    .achievement-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .achievement-user {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+
+    .user-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        margin-right: 0.5rem;
+    }
+
+    .user-name {
+        font-weight: 500;
+    }
+
+    .achievement-desc {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    /* Leaderboard Section */
+    .leaderboard-container {
+        background-color: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: var(--box-shadow);
+    }
+
+    .leaderboard-tabs {
+        display: flex;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .leaderboard-tab {
+        padding: 1rem 1.5rem;
+        flex: 1;
+        text-align: center;
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        color: #6c757d;
+        transition: var(--transition);
+        border-bottom: 3px solid transparent;
+    }
+
+    .leaderboard-tab:hover {
+        color: var(--primary-color);
+        background-color: rgba(67, 97, 238, 0.03);
+    }
+
+    .leaderboard-tab.active {
+        color: var(--primary-color);
+        border-bottom-color: var(--primary-color);
+    }
+
+    .leaderboard-content {
+        display: none;
+        padding: 2rem;
+    }
+
+    .leaderboard-content.active {
+        display: block;
+    }
+
+    /* Podium */
+    .leaderboard-podium {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        margin-bottom: 3rem;
+        gap: 1.5rem;
+        padding: 0 2rem;
+    }
+
+    .podium-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        width: 180px;
+    }
+
+    .crown {
+        width: 40px;
+        height: 30px;
+        position: absolute;
+        top: -28px;
+        background-size: contain;
+        background-position: center;
+        background-repeat: no-repeat;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+    }
+
+    .crown.gold {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="%23ffd700" d="M576 136c0 22.09-17.91 40-40 40c-.248 0-.4551-.1266-.7031-.1305l-50.52 277.9C482 468.9 468.8 480 453.3 480H122.7c-15.46 0-28.72-11.06-31.48-26.27L40.71 175.9C40.46 175.9 40.25 176 39.1 176c-22.09 0-40-17.91-40-40S17.91 96 39.1 96s40 17.91 40 40c0 8.998-3.521 16.89-8.537 23.57L142.8 97.42c18.61-6.447 38.41 5.531 41.57 24.7L200 160l45.27-45.27c12.5-12.5 32.72-12.5 45.22 0L336 160l15.53-38.28c3.146-19.14 22.83-31.16 41.44-24.7l71.44 62.15C459 152.9 455.5 144.1 455.5 136c0-22.09 17.91-40 40-40S535.5 113.9 535.5 136z"/></svg>');
+    }
+
+    .crown.silver {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="%23c0c0c0" d="M576 136c0 22.09-17.91 40-40 40c-.248 0-.4551-.1266-.7031-.1305l-50.52 277.9C482 468.9 468.8 480 453.3 480H122.7c-15.46 0-28.72-11.06-31.48-26.27L40.71 175.9C40.46 175.9 40.25 176 39.1 176c-22.09 0-40-17.91-40-40S17.91 96 39.1 96s40 17.91 40 40c0 8.998-3.521 16.89-8.537 23.57L142.8 97.42c18.61-6.447 38.41 5.531 41.57 24.7L200 160l45.27-45.27c12.5-12.5 32.72-12.5 45.22 0L336 160l15.53-38.28c3.146-19.14 22.83-31.16 41.44-24.7l71.44 62.15C459 152.9 455.5 144.1 455.5 136c0-22.09 17.91-40 40-40S535.5 113.9 535.5 136z"/></svg>');
+    }
+
+    .crown.bronze {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="%23cd7f32" d="M576 136c0 22.09-17.91 40-40 40c-.248 0-.4551-.1266-.7031-.1305l-50.52 277.9C482 468.9 468.8 480 453.3 480H122.7c-15.46 0-28.72-11.06-31.48-26.27L40.71 175.9C40.46 175.9 40.25 176 39.1 176c-22.09 0-40-17.91-40-40S17.91 96 39.1 96s40 17.91 40 40c0 8.998-3.521 16.89-8.537 23.57L142.8 97.42c18.61-6.447 38.41 5.531 41.57 24.7L200 160l45.27-45.27c12.5-12.5 32.72-12.5 45.22 0L336 160l15.53-38.28c3.146-19.14 22.83-31.16 41.44-24.7l71.44 62.15C459 152.9 455.5 144.1 455.5 136c0-22.09 17.91-40 40-40S535.5 113.9 535.5 136z"/></svg>');
+    }
+
+    .podium-avatar-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+
+    .podium-avatar, .podium-avatar-placeholder {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .podium-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-color);
+        color: white;
+        font-size: 1.75rem;
+        font-weight: 600;
+    }
+
+    .first-place .podium-avatar,
+    .first-place .podium-avatar-placeholder {
+        width: 80px;
+        height: 80px;
+        border: 4px solid var(--gold-color);
+    }
+
+    .second-place .podium-avatar,
+    .second-place .podium-avatar-placeholder {
+        border: 3px solid var(--silver-color);
+    }
+
+    .third-place .podium-avatar,
+    .third-place .podium-avatar-placeholder {
+        border: 3px solid var(--bronze-color);
+    }
+
+    .podium-rank {
+        position: absolute;
+        bottom: 0;
+        right: -5px;
+        width: 26px;
+        height: 26px;
+        background-color: var(--primary-color);
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        border: 2px solid white;
+        font-size: 0.9rem;
+    }
+
+    .first-place .podium-rank {
+        background-color: var(--gold-color);
+        color: #333;
+    }
+
+    .second-place .podium-rank {
+        background-color: var(--silver-color);
+        color: #333;
+    }
+
+    .third-place .podium-rank {
+        background-color: var(--bronze-color);
+        color: white;
+    }
+
+    .podium-info {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+
+    .podium-name {
+        font-weight: 600;
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .podium-score {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .podium-column {
+        width: 100%;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        text-align: center;
+    }
+
+    .podium-column.gold {
+        height: 120px;
+        background: linear-gradient(to top, var(--gold-color), #fff0aa);
+    }
+
+    .podium-column.silver {
+        height: 90px;
+        background: linear-gradient(to top, var(--silver-color), #f0f0f0);
+    }
+
+    .podium-column.bronze {
+        height: 70px;
+        background: linear-gradient(to top, var(--bronze-color), #e8c39e);
+    }
+
+    /* Ranking List */
+    .ranking-list {
+        margin-top: 2rem;
+    }
+
+    .ranking-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        background-color: white;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        transition: var(--transition);
+    }
+
+    .ranking-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .ranking-position {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        color: #6c757d;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .ranking-user {
+        display: flex;
+        align-items: center;
+        flex-grow: 1;
+    }
+
+    .ranking-avatar, .ranking-avatar-placeholder {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+
+    .ranking-avatar-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 600;
+    }
+
+    .ranking-name {
+        font-weight: 500;
+    }
+
+    .ranking-score {
+        font-weight: 600;
+        color: var(--primary-color);
+    }
+
+    /* Leaderboard Info Card */
+    .leaderboard-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .leaderboard-info-card h3 {
+        margin-bottom: 1.5rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #333;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .info-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+        background-color: rgba(67, 97, 238, 0.1);
+        color: var(--primary-color);
+    }
+
+    .info-content h4 {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .info-content p {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    /* Empty States */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #6c757d;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-desc {
+        color: #adb5bd;
+        margin-bottom: 0;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .leaderboard-podium {
+            padding: 0;
+        }
+
+        .podium-item {
+            width: 150px;
+        }
+
+        .leaderboard-tabs {
+            flex-wrap: wrap;
+        }
+
+        .leaderboard-tab {
+            flex: 1 0 50%;
+        }
+    }
+
+    @media (max-width: 767px) {
+        .header-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .header-actions {
+            margin-top: 1rem;
+        }
+
+        .leaderboard-podium {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .podium-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .first-place {
+            order: 1;
+            width: 100%;
+        }
+
+        .second-place {
+            order: 2;
+        }
+
+        .third-place {
+            order: 3;
+        }
+
+        .leaderboard-content {
+            padding: 1.5rem 1rem;
+        }
+
+        .leaderboard-tabs {
+            overflow-x: auto;
+            flex-wrap: nowrap;
+            padding-bottom: 5px;
+        }
+
+        .leaderboard-tab {
+            flex: 0 0 auto;
+            white-space: nowrap;
+        }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tab switching functionality
+        const tabs = document.querySelectorAll('.leaderboard-tab');
+        const contents = document.querySelectorAll('.leaderboard-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Remove active class from all tabs
+                tabs.forEach(t => t.classList.remove('active'));
+                // Add active class to clicked tab
+                this.classList.add('active');
+
+                // Hide all content
+                contents.forEach(content => content.classList.remove('active'));
+
+                // Show selected content
+                const tabName = this.getAttribute('data-tab');
+                document.getElementById(tabName + '-leaderboard').classList.add('active');
+            });
+        });
+    });
+</script>
+{% endblock %}

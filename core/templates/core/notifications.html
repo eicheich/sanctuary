@@ -1,0 +1,59 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Your Notifications</h4>
+            <div>
+                <a href="{% url 'notifications' %}?mark_all_read=true" class="btn btn-sm btn-outline-primary">
+                    Mark All as Read
+                </a>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if notifications %}
+                <div class="list-group">
+                    {% for notification in notifications %}
+                        <div class="list-group-item list-group-item-action {% if not notification.is_read %}list-group-item-light{% endif %}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ notification.title }}</h5>
+                                <small>{{ notification.created_at|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1">{{ notification.message }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {% if notification.notification_type == 'file_interaction' %}
+                                        <i class="bi bi-file-earmark"></i> File Interaction
+                                    {% elif notification.notification_type == 'new_file' %}
+                                        <i class="bi bi-file-earmark-plus"></i> New File
+                                    {% elif notification.notification_type == 'report_update' %}
+                                        <i class="bi bi-flag"></i> Report Update
+                                    {% else %}
+                                        <i class="bi bi-bell"></i> System Notification
+                                    {% endif %}
+                                </small>
+                                <div>
+                                    {% if notification.related_file %}
+                                        <a href="{% url 'topic_detail' notification.related_file.topic.id %}" class="btn btn-sm btn-outline-primary">View File</a>
+                                    {% endif %}
+
+                                    {% if not notification.is_read %}
+                                        <a href="{% url 'mark_notification_read' notification.id %}" class="btn btn-sm btn-outline-secondary">
+                                            Mark as Read
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+
+            {% else %}
+                <p class="text-center py-3">You have no notifications.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

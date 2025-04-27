@@ -1,0 +1,741 @@
+{% extends 'base/base.html' %}
+
+{% block title %}SANCTUARY - Collaborative Learning Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* UX-focused variables */
+    :root {
+        --primary: #7B68EE;
+        --primary-light: #9D8DF2;
+        --primary-dark: #6A5ACD;
+        --accent: #FF3366;
+        --accent-light: #FF6B8B;
+        --dark: #2D3748;
+        --gray-dark: #4A5568;
+        --gray: #718096;
+        --gray-light: #E2E8F0;
+        --light: #F8FAFC;
+        --success: #38A169;
+        --error: #E53E3E;
+        --warning: #ED8936;
+        --info: #3182CE;
+
+        /* Spacing system for consistent rhythm */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        --space-xxl: 3rem;
+
+        /* Typography scales */
+        --text-xs: 0.75rem;
+        --text-sm: 0.875rem;
+        --text-base: 1rem;
+        --text-md: 1.125rem;
+        --text-lg: 1.25rem;
+        --text-xl: 1.5rem;
+        --text-2xl: 1.875rem;
+        --text-3xl: 2.25rem;
+        --text-4xl: 3rem;
+
+        /* Component sizes */
+        --border-radius-sm: 0.25rem;
+        --border-radius: 0.5rem;
+        --border-radius-lg: 0.75rem;
+        --border-radius-xl: 1rem;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+        /* Transitions */
+        --transition-fast: 0.15s ease;
+        --transition: 0.2s ease;
+        --transition-slow: 0.3s ease;
+    }
+
+    /* Base styles with focus on readability and usability */
+    body {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        color: var(--dark);
+        line-height: 1.6;
+        background-color: var(--light);
+    }
+
+    .container {
+        max-width: 1200px;
+    }
+
+    /* Accessibility improvements */
+    :focus {
+        outline: 2px solid var(--primary);
+        outline-offset: 2px;
+    }
+
+    /* Typography with improved readability */
+    h1, h2, h3, h4, h5, h6 {
+        margin-bottom: var(--space-md);
+        font-weight: 700;
+        line-height: 1.2;
+        color: var (--dark);
+    }
+
+    h1 {
+        font-size: var(--text-4xl);
+        font-weight: 800;
+    }
+
+    h2 {
+        font-size: var(--text-3xl);
+    }
+
+    h3 {
+        font-size: var(--text-2xl);
+    }
+
+    p {
+        margin-bottom: var(--space-lg);
+    }
+
+    /* Section spacing for rhythm */
+    section {
+        padding: var(--space-xxl) 0;
+    }
+
+    /* Enhanced hero for better first impression */
+    .hero {
+        background-color: var(--light);
+        padding: calc(var(--space-xxl) * 2) 0 var(--space-xxl);
+        position: relative;
+    }
+
+    .hero::after {
+        content: "";
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        right: 0;
+        background-color: var(--primary-light);
+        opacity: 0.05;
+        z-index: -1;
+        clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+    }
+
+    .hero-content {
+        position: relative;
+        z-index: 2;
+    }
+
+    .hero-title {
+        margin-bottom: var(--space-lg);
+        position: relative;
+    }
+
+    .hero-subtitle {
+        font-size: var(--text-xl);
+        color: var(--gray-dark);
+        margin-bottom: var(--space-xl);
+        max-width: 540px;
+    }
+
+    .highlight {
+        color: var(--primary);
+        position: relative;
+    }
+
+    .highlight::after {
+        content: '';
+        position: absolute;
+        bottom: 0.1em;
+        left: 0;
+        right: 0;
+        height: 0.3em;
+        background-color: rgba(123, 104, 238, 0.15);
+        z-index: -1;
+    }
+
+    /* Value proposition cards with clear benefits */
+    .value-prop {
+        margin-bottom: var(--space-xl);
+    }
+
+    .section-header {
+        text-align: center;
+        margin-bottom: var(--space-xl);
+    }
+
+    .section-title {
+        margin-bottom: var (--space-sm);
+    }
+
+    .section-subtitle {
+        color: var(--gray);
+        max-width: 700px;
+        margin: 0 auto var(--space-xl);
+    }
+
+    /* Usable cards with clear affordances */
+    .feature-card {
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        padding: var(--space-xl);
+        height: 100%;
+        box-shadow: var(--shadow);
+        border-top: 4px solid var(--primary);
+        transition: var(--transition);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 48px;
+        height: 48px;
+        border-radius: var(--border-radius);
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary);
+        margin-bottom: var(--space-lg);
+    }
+
+    .feature-icon i {
+        font-size: var(--text-xl);
+    }
+
+    .feature-title {
+        font-size: var(--text-lg);
+        margin-bottom: var(--space-sm);
+    }
+
+    /* How it works section with clear steps */
+    .steps-container {
+        position: relative;
+    }
+
+    .step-card {
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow);
+        margin-bottom: var(--space-lg);
+        display: flex;
+        align-items: flex-start;
+    }
+
+    .step-number {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 50%;
+        font-weight: 700;
+        margin-right: var(--space-lg);
+    }
+
+    .step-content h3 {
+        margin-bottom: var(--space-sm);
+    }
+
+    /* Social proof with testimonials */
+    .testimonial {
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow);
+        height: 100%;
+        border-left: 4px solid var(--primary);
+    }
+
+    .testimonial-content {
+        margin-bottom: var(--space-lg);
+        font-style: italic;
+    }
+
+    .testimonial-author {
+        display: flex;
+        align-items: center;
+    }
+
+    .author-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: var(--text-lg);
+        margin-right: var(--space-md);
+    }
+
+    /* Clear call-to-action section */
+    .cta {
+        padding: var(--space-xxl) 0;
+        background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        color: white;
+        text-align: center;
+    }
+
+    .cta h2 {
+        color: white;
+        margin-bottom: var(--space-lg);
+    }
+
+    .cta p {
+        opacity: 0.9;
+        max-width: 700px;
+        margin: 0 auto var(--space-xl);
+        font-size: var(--text-lg);
+    }
+
+    /* Button system with clear states */
+    .btn-primary-ux {
+        background-color: var(--primary);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        font-size: var(--text-base);
+        font-weight: 600;
+        border-radius: 100px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .btn-primary-ux:hover,
+    .btn-primary-ux:focus {
+        background-color: var(--primary-dark);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-primary-ux:active {
+        transform: translateY(0);
+    }
+
+    .btn-secondary-ux {
+        background-color: white;
+        border: none;
+        color: var(--primary);
+        padding: 0.75rem 1.5rem;
+        font-size: var(--text-base);
+        font-weight: 600;
+        border-radius: 100px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+    }
+
+    .btn-secondary-ux:hover,
+    .btn-secondary-ux:focus {
+        background-color: var(--gray-light);
+        color: var(--primary-dark);
+        transform: translateY(-2px);
+    }
+
+    .btn-secondary-ux:active {
+        transform: translateY(0);
+    }
+
+    .btn-white {
+        background-color: white;
+        color: var(--primary);
+    }
+
+    .btn-white:hover,
+    .btn-white:focus {
+        background-color: rgba(255, 255, 255, 0.9);
+        color: var(--primary-dark);
+    }
+
+    /* Form with improved UX */
+    .form-section {
+        background-color: var(--light);
+    }
+
+    .form-container {
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        padding: var(--space-xl);
+        box-shadow: var(--shadow);
+        border-top: 4px solid var(--primary);
+    }
+
+    .form-title {
+        margin-bottom: var(--space-lg);
+        font-weight: 700;
+        color: var(--dark);
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: var(--space-sm);
+        font-weight: 600;
+        color: var(--gray-dark);
+    }
+
+    .form-control {
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        font-weight: 400;
+        line-height: 1.5;
+        color: var(--dark);
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.25);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 992px) {
+        .hero {
+            padding: var(--space-xxl) 0;
+        }
+
+        h1 {
+            font-size: var(--text-3xl);
+        }
+
+        h2 {
+            font-size: var(--text-2xl);
+        }
+
+        .hero-subtitle {
+            font-size: var(--text-lg);
+        }
+    }
+
+    @media (max-width: 768px) {
+        section {
+            padding: var(--space-xl) 0;
+        }
+
+        .hero {
+            text-align: center;
+        }
+
+        .hero-subtitle {
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-buttons {
+            justify-content: center;
+        }
+
+        .step-card {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .step-number {
+            margin-right: 0;
+            margin-bottom: var(--space-md);
+        }
+
+        .feature-card {
+            margin-bottom: var(--space-lg);
+        }
+    }
+
+    @media (max-width: 576px) {
+        .btn-primary-ux,
+        .btn-secondary-ux {
+            display: block;
+            width: 100%;
+            margin-bottom: var(--space-sm);
+        }
+
+        .hero-buttons .btn + .btn {
+            margin-top: var(--space-sm);
+        }
+
+        .form-container {
+            padding: var(--space-lg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section with clear value proposition -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 hero-content">
+                <h1 class="hero-title">
+                    Better <span class="highlight">Study Groups</span>, Better Results
+                </h1>
+                <p class="hero-subtitle">
+                    SANCTUARY helps students collaborate effectively with organized study materials, discussions, and teamwork tools — all in one secure space.
+                </p>
+                <div class="d-flex flex-wrap gap-3 hero-buttons">
+                    <a href="{% url 'login' %}" class="btn btn-primary-ux">
+                        <i class="fas fa-sign-in-alt me-2"></i>Get Started
+                    </a>
+                    <a href="#how-it-works" class="btn btn-secondary-ux">
+                        <i class="fas fa-info-circle me-2"></i>How It Works
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center mt-5 mt-lg-0">
+                <img src="https://cdn-icons-png.flaticon.com/512/2194/2194226.png" alt="Students collaborating in an online study group" class="img-fluid" style="max-width: 70%;">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Value Proposition Section -->
+<section class="value-prop bg-white">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Why SANCTUARY Works</h2>
+            <p class="section-subtitle">Designed specifically to solve the challenges of online study groups</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Key Value 1 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="feature-title">Private & Secure</h3>
+                    <p>Create invite-only study spaces where your files and discussions stay private to your group.</p>
+                </div>
+            </div>
+
+            <!-- Key Value 2 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <h3 class="feature-title">Organized Materials</h3>
+                    <p>Keep study materials neatly categorized by topic, making them easy to find when you need them most.</p>
+                </div>
+            </div>
+
+            <!-- Key Value 3 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-comments"></i>
+                    </div>
+                    <h3 class="feature-title">Focused Discussions</h3>
+                    <p>Comment directly on specific materials and keep conversations organized around topics.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- How It Works (Clear Steps) -->
+<section class="how-it-works" id="how-it-works">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">How SANCTUARY Works</h2>
+            <p class="section-subtitle">Three simple steps to transform your study experience</p>
+        </div>
+
+        <div class="steps-container">
+            <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Create Your Account</h3>
+                    <p>Sign up with your email address and create your academic profile with your subjects and interests.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Form Your Study Group</h3>
+                    <p>Create a group for your class or project, then invite classmates with a simple link or email.</p>
+                </div>
+            </div>
+
+            <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Collaborate Effectively</h3>
+                    <p>Upload files, create discussion topics, and work together in a structured environment that keeps everyone on track.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Social Proof / Testimonials -->
+<section class="testimonials bg-white">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">Student Success Stories</h2>
+            <p class="section-subtitle">See how others are using SANCTUARY to improve their academic results</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Testimonial 1 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        "Our biology study group went from chaotic group chats to organized discussions. We improved our exam scores by creating a structured study environment."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">JP</div>
+                        <div>
+                            <h4 class="h5 mb-0">Jamie P.</h4>
+                            <p class="text-muted mb-0">Biology Major</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonial 2 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        "SANCTUARY helped our coding team keep track of different versions of our project files. The comment system let us discuss code directly without switching between apps."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">SR</div>
+                        <div>
+                            <h4 class="h5 mb-0">Sam R.</h4>
+                            <p class="text-muted mb-0">Computer Science</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Testimonial 3 -->
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="testimonial">
+                    <div class="testimonial-content">
+                        "As a history major, I love how our group can create topic areas for different time periods. We share resources and prepare for exams together effectively."
+                    </div>
+                    <div class="testimonial-author">
+                        <div class="author-avatar">AK</div>
+                        <div>
+                            <h4 class="h5 mb-0">Alex K.</h4>
+                            <p class="text-muted mb-0">History Major</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Clear Call-to-Action -->
+<section class="cta">
+    <div class="container">
+        <h2>Ready to Improve Your Study Group?</h2>
+        <p>Join thousands of students already using SANCTUARY to enhance their learning experience.</p>
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <a href="{% url 'login' %}" class="btn btn-secondary-ux btn-white">
+                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+            </a>
+            <a href="{% url 'register' %}" class="btn btn-secondary-ux btn-white">
+                <i class="fas fa-user-plus me-2"></i>Register
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Request Form with UX Best Practices -->
+<section class="form-section" id="create-group">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="form-container text-center">
+                    <h2 class="form-title">Create Your Study Group</h2>
+                    <p class="mb-4">To create or request a study group, you'll need to register an account first. Registration is quick and helps us ensure the quality of our study groups.</p>
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'register' %}" class="btn btn-primary-ux">
+                            <i class="fas fa-user-plus me-2"></i>Register Now
+                        </a>
+                        <a href="{% url 'login' %}" class="btn btn-secondary-ux">
+                            <i class="fas fa-sign-in-alt me-2"></i>Already have an account? Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure correct background color
+        document.body.style.backgroundColor = "var(--light)";
+
+        // Smooth scrolling with improved user experience
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    // Calculate header height dynamically
+                    const headerHeight = document.querySelector('.navbar') ?
+                        document.querySelector('.navbar').offsetHeight : 80;
+
+                    const elementPosition = targetElement.getBoundingClientRect().top;
+                    const offsetPosition = elementPosition + window.pageYOffset - headerHeight - 20;
+
+                    window.scrollTo({
+                        top: offsetPosition,
+                        behavior: 'smooth'
+                    });
+
+                    // Set focus to the target element for accessibility
+                    targetElement.setAttribute('tabindex', '-1');
+                    targetElement.focus({preventScroll: true});
+                }
+            });
+        });
+
+        // Simple form validation feedback
+        const form = document.querySelector('form');
+        if (form) {
+            const inputs = form.querySelectorAll('input, textarea');
+
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value.trim() === '' && this.hasAttribute('required')) {
+                        this.classList.add('is-invalid');
+                    } else {
+                        this.classList.remove('is-invalid');
+                        this.classList.add('is-valid');
+                    }
+                });
+            });
+        }
+    });
+</script>
+{% endblock %}

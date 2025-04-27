@@ -1,0 +1,360 @@
+{% extends 'base/base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Sign In | SANCTUARY{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* UX-focused variables - sama dengan landing page */
+    :root {
+        --primary: #7B68EE;
+        --primary-light: #9D8DF2;
+        --primary-dark: #6A5ACD;
+        --accent: #FF3366;
+        --accent-light: #FF6B8B;
+        --dark: #2D3748;
+        --gray-dark: #4A5568;
+        --gray: #718096;
+        --gray-light: #E2E8F0;
+        --light: #F8FAFC;
+        --success: #38A169;
+        --error: #E53E3E;
+        --warning: #ED8936;
+        --info: #3182CE;
+
+        /* Spacing system */
+        --space-xs: 0.25rem;
+        --space-sm: 0.5rem;
+        --space-md: 1rem;
+        --space-lg: 1.5rem;
+        --space-xl: 2rem;
+        --space-xxl: 3rem;
+
+        /* Typography scales */
+        --text-xs: 0.75rem;
+        --text-sm: 0.875rem;
+        --text-base: 1rem;
+        --text-md: 1.125rem;
+        --text-lg: 1.25rem;
+        --text-xl: 1.5rem;
+        --text-2xl: 1.875rem;
+
+        /* Component sizes */
+        --border-radius-sm: 0.25rem;
+        --border-radius: 0.5rem;
+        --border-radius-lg: 0.75rem;
+
+        /* Shadows */
+        --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+        --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+        /* Transitions */
+        --transition: 0.2s ease;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        background-color: var(--light);
+        color: var(--dark);
+        line-height: 1.6;
+    }
+
+    /* Login container with proper spacing */
+    .login-container {
+        max-width: 450px;
+        margin: calc(var(--space-xxl) * 1.5) auto;
+        padding: var(--space-md);
+    }
+
+    /* Login card with consistent styling */
+    .login-card {
+        background-color: white;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-lg);
+        border: none;
+        overflow: hidden;
+        border-top: 4px solid var(--primary);
+    }
+
+    /* Clear visual hierarchy */
+    .login-header {
+        padding: var(--space-xl) var(--space-xl) var(--space-md);
+        background-color: white;
+        text-align: center;
+    }
+
+    .login-header h2 {
+        font-size: var(--text-2xl);
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: var(--space-xs);
+    }
+
+    .login-header p {
+        color: var(--gray);
+        margin-bottom: 0;
+    }
+
+    .login-body {
+        padding: 0 var(--space-xl) var(--space-xl);
+        background-color: white;
+    }
+
+    /* Form styling for better usability */
+    .form-label {
+        display: block;
+        margin-bottom: var(--space-sm);
+        font-weight: 600;
+        color: var(--gray-dark);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: var(--text-base);
+        border: 1px solid var(--gray-light);
+        border-radius: var(--border-radius);
+        transition: var(--transition);
+    }
+
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(123, 104, 238, 0.25);
+        outline: none;
+    }
+
+    /* Validation states */
+    .form-control.is-invalid {
+        border-color: var(--error);
+    }
+
+    .form-control.is-valid {
+        border-color: var(--success);
+    }
+
+    /* Accessible input with icons */
+    .input-icon-wrapper {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        top: 50%;
+        left: 14px;
+        transform: translateY(-50%);
+        color: var(--gray);
+        pointer-events: none;
+    }
+
+    .icon-input {
+        padding-left: 40px;
+    }
+
+    /* Consistent button styling */
+    .btn-login {
+        background-color: var(--primary);
+        border: none;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        font-size: var(--text-base);
+        font-weight: 600;
+        border-radius: 100px;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        width: 100%;
+    }
+
+    .btn-login:hover,
+    .btn-login:focus {
+        background-color: var(--primary-dark);
+        color: white;
+        transform: translateY(-2px);
+    }
+
+    .btn-login:active {
+        transform: translateY(0);
+    }
+
+    /* Info cards with consistent styling */
+    .feature-info {
+        border-radius: var(--border-radius);
+        padding: var(--space-md);
+        margin-bottom: var(--space-md);
+        background-color: white;
+        box-shadow: var(--shadow-sm);
+        border-left: 4px solid var(--primary);
+        display: flex;
+        align-items: center;
+    }
+
+    .feature-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border-radius: var(--border-radius);
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary);
+        flex-shrink: 0;
+        margin-right: var(--space-md);
+    }
+
+    .feature-text {
+        margin: 0;
+        font-size: var(--text-sm);
+        font-weight: 600;
+        color: var (--gray-dark);
+    }
+
+    /* Additional help text */
+    .help-text {
+        color: var(--gray);
+        font-size: var(--text-sm);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .login-container {
+            margin: var(--space-xl) auto;
+            padding: var(--space-sm);
+        }
+
+        .login-header {
+            padding: var(--space-lg) var(--space-md) var(--space-sm);
+        }
+
+        .login-body {
+            padding: 0 var(--space-md) var(--space-lg);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card card">
+        <!-- Card Header with clear purpose -->
+        <div class="login-header">
+            <h2>Welcome Back</h2>
+            <p>Sign in to access your study space</p>
+        </div>
+
+        <!-- Card Body with optimized form -->
+        <div class="login-body">
+            <!-- Login Form with accessibility attributes -->
+            <form method="post" aria-label="Login form">
+                {% csrf_token %}
+
+                <!-- Username Field -->
+                <div class="mb-4">
+                    <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-user input-icon" aria-hidden="true"></i>
+                        {% render_field form.username class="form-control icon-input" placeholder="Enter your username" autocomplete="username" aria-required="true" %}
+                    </div>
+                </div>
+
+                <!-- Password Field -->
+                <div class="mb-4">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                    <div class="input-icon-wrapper">
+                        <i class="fas fa-lock input-icon" aria-hidden="true"></i>
+                        {% render_field form.password class="form-control icon-input" placeholder="Enter your password" autocomplete="current-password" aria-required="true" %}
+                    </div>
+                </div>
+
+                <!-- Clear primary action -->
+                <div class="d-grid mt-4">
+                    <button type="submit" class="btn btn-login">
+                        <i class="fas fa-sign-in-alt me-2" aria-hidden="true"></i>Sign In
+                    </button>
+                </div>
+
+                <!-- Help text -->
+                <div class="text-center mt-3 mb-4">
+                    <p class="help-text">Forgot password? Contact your administrator</p>
+                </div>
+            </form>
+
+            <!-- Contextual information -->
+            <div class="mt-4">
+                <div class="feature-info">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                    </div>
+                    <p class="feature-text">Your data is secure and private to your study groups</p>
+                </div>
+                <div class="feature-info">
+                    <div class="feature-icon">
+                        <i class="fas fa-users" aria-hidden="true"></i>
+                    </div>
+                    <p class="feature-text">Connect with your classmates in a focused study space</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure correct background color
+        document.body.style.backgroundColor = "var(--light)";
+
+        // Focus the username field for usability
+        document.querySelector('input[name="username"]').focus();
+
+        // Form validation feedback
+        const form = document.querySelector('form');
+        const inputs = form.querySelectorAll('input');
+
+        inputs.forEach(input => {
+            // Validate on blur
+            input.addEventListener('blur', function() {
+                validateInput(this);
+            });
+
+            // Validate on input after first blur
+            input.addEventListener('input', function() {
+                if (this.dataset.blurred) {
+                    validateInput(this);
+                }
+            });
+        });
+
+        // Handle form submission
+        form.addEventListener('submit', function(e) {
+            let isValid = true;
+
+            inputs.forEach(input => {
+                if (!validateInput(input)) {
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                // Focus the first invalid field
+                form.querySelector('.is-invalid').focus();
+            }
+        });
+
+        function validateInput(input) {
+            input.dataset.blurred = true;
+
+            if (input.hasAttribute('required') && input.value.trim() === '') {
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+                return false;
+            } else {
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+                return true;
+            }
+        }
+    });
+</script>
+{% endblock %}

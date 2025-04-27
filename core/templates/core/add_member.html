@@ -1,0 +1,38 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Add Member | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Add Member to {{ group.group_name }}</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Add existing users to your study group. Only users who are already registered in the system can be added.</p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                        <div class="form-text">Enter the exact username of the member to add</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-info">Add Member</button>
+                        <a href="{% url 'manage_group' group.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer">
+                <div class="small text-muted">
+                    Note: If the user doesn't exist, they need to register in the system first.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

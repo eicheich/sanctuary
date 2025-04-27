@@ -1,0 +1,136 @@
+{% extends 'base/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>Review Report</h4>
+            <span class="badge {% if report.status == 'pending' %}bg-warning text-dark{% elif report.status == 'under_review' %}bg-info text-dark{% elif report.status == 'resolved' %}bg-success{% else %}bg-danger{% endif %}">
+                {{ report.get_status_display }}
+            </span>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Report Details</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>Report Type</th>
+                            <td>{{ report.get_report_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Reported By</th>
+                            <td>{{ report.reported_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Date Reported</th>
+                            <td>{{ report.created_at|date:"F d, Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Description</th>
+                            <td>{{ report.description }}</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <h5>File Details</h5>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>File Title</th>
+                            <td>{{ report.file.title }}</td>
+                        </tr>
+                        <tr>
+                            <th>File Type</th>
+                            <td>{{ report.file.get_file_type_display }}</td>
+                        </tr>
+                        <tr>
+                            <th>Uploaded By</th>
+                            <td>{{ report.file.uploaded_by.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Course</th>
+                            <td>{{ report.file.course.course_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Topic</th>
+                            <td>{{ report.file.topic.topic_name }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5>File Preview</h5>
+                <div class="mb-3">
+                    {% if report.file.file_type == 'image' %}
+                        <div class="text-center">
+                            <img src="{{ report.file.file.url }}" class="img-fluid rounded" style="max-height: 300px;" alt="{{ report.file.title }}">
+                        </div>
+                    {% elif report.file.file_type == 'pdf' %}
+                        <div class="ratio ratio-16x9" style="height: 300px;">
+                            <embed src="{{ report.file.file.url }}" type="application/pdf" width="100%" height="300px" />
+                        </div>
+                    {% else %}
+                        <p class="text-center">
+                            <i class="bi bi-file-earmark fs-1"></i><br>
+                            File preview not available
+                        </p>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-center mt-2">
+                        <a href="{{ report.file.file.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                            <i class="bi bi-eye"></i> View Full File
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <h5>Take Action</h5>
+                <div class="d-flex gap-2">
+                    {% if report.status != 'resolved' and report.status != 'rejected' %}
+                        <form action="{% url 'review_report' report.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="resolve">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Resolve Report
+                            </button>
+                        </form>
+
+                        <form action="{% url 'review_report' report.id %}" method="post" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reject">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Reject Report
+                            </button>
+                        </form>
+
+                        <form action="{% url 'review_report' report.id %}" method="post" class="d-inline ms-auto">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="delete_file">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this file? This action cannot be undone.')">
+                                <i class="bi bi-trash"></i> Remove File
+                            </button>
+                        </form>
+                    {% else %}
+                        <div class="alert alert-info w-100">
+                            <p class="mb-0">
+                                <strong>Status:</strong> {{ report.get_status_display }}
+                                {% if report.resolved_by %}
+                                    by {{ report.resolved_by.username }} on {{ report.updated_at|date:"F d, Y H:i" }}
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="card-footer">
+            <a href="{% url 'manage_reports' %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to All Reports
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

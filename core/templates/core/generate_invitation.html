@@ -1,0 +1,475 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Generate Invitation | {{ group.group_name }} | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'manage_group' group_id=group.id %}">{{ group.group_name }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'manage_invitations' group_id=group.id %}">Invitations</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Generate Invitation</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Create Invitation Link - {{ group.group_name }}</h3>
+                </div>
+                <div class="card-body">
+                    {% if invitation_created %}
+                    <div class="invitation-result">
+                        <div class="text-center mb-4">
+                            <i class="fas fa-check-circle invitation-success-icon"></i>
+                            <h4>Invitation Link Generated!</h4>
+                            <p>Share this link with anyone you want to invite to your group. <strong>Multiple people</strong> can use the same link until you revoke it.</p>
+                        </div>
+
+                        <div class="invitation-link-card">
+                            <h5><i class="fas fa-link me-2"></i>Invitation Link</h5>
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control" id="invitationLink" value="{{ invitation_url }}" readonly>
+                                <button class="btn btn-outline-primary" type="button" id="copyButton" onclick="copyToClipboard()">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                            <div class="invitation-details">
+                                <div class="detail-item">
+                                    <i class="fas fa-users"></i>
+                                    {% if invitation.max_uses %}
+                                        <span>Limited to {{ invitation.max_uses }} uses ({{ invitation.usage_count }} used)</span>
+                                    {% else %}
+                                        <span>Unlimited uses</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-clock"></i>
+                                    {% if invitation.expires_at %}
+                                        <span>Expires on {{ invitation.expires_at|date:"F j, Y" }}</span>
+                                    {% else %}
+                                        <span>Never expires</span>
+                                    {% endif %}
+                                </div>
+                                <div class="detail-item">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>Created by {{ request.user.username }}</span>
+                                </div>
+                            </div>
+                            <div class="qr-code-section mt-3">
+                                <h6 class="text-center mb-2">QR Code for Mobile Sharing</h6>
+                                <div class="qr-container">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={{ invitation_url|urlencode }}" alt="Invitation QR Code" class="qr-code">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="invitation-preview-card mt-4">
+                            <h5><i class="fas fa-eye me-2"></i>Preview</h5>
+                            <div class="preview-box">
+                                <div class="envelope-animation">
+                                    <div class="envelope">
+                                        <div class="envelope-flap"></div>
+                                        <div class="envelope-content">
+                                            <div class="preview-header">
+                                                <div class="preview-avatar">
+                                                    {{ request.user.username|first|upper }}
+                                                </div>
+                                                <div class="preview-info">
+                                                    <h6>You're invited to join a study group!</h6>
+                                                    <p>From {{ request.user.get_full_name|default:request.user.username }}</p>
+                                                </div>
+                                            </div>
+                                            <div class="preview-body">
+                                                <div class="preview-group-name">{{ group.group_name }}</div>
+                                                <div class="preview-group-details">{{ group.institution }}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons mt-4">
+                            <div class="row">
+                                <div class="col-md-6 mb-2">
+                                    <a href="{% url 'manage_invitations' group_id=group.id %}" class="btn btn-primary d-block">
+                                        <i class="fas fa-arrow-left me-2"></i>Back to All Invitations
+                                    </a>
+                                </div>
+                                <div class="col-md-6 mb-2">
+                                    <a href="{% url 'generate_invitation' group_id=group.id %}" class="btn btn-outline-primary d-block">
+                                        <i class="fas fa-plus me-2"></i>Create Another Invitation
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="invitation-card">
+                            <i class="fas fa-envelope-open-text invitation-icon"></i>
+                            <h4>Create Multi-Use Invitation Link</h4>
+                            <p>Generate a shareable link that can be used by <strong>multiple people</strong> to join your study group.</p>
+
+                            <form method="POST" class="invitation-form">
+                                {% csrf_token %}
+
+                                <div class="form-section">
+                                    <h5 class="section-title">Link Expiration</h5>
+                                    <div class="form-group mb-3">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="expiry_type" id="expiry_never" value="never" checked>
+                                            <label class="form-check-label" for="expiry_never">
+                                                <i class="fas fa-infinity me-2"></i>Never expires
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="expiry_type" id="expiry_7days" value="7days">
+                                            <label class="form-check-label" for="expiry_7days">
+                                                <i class="fas fa-calendar-week me-2"></i>Expires after 7 days
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="expiry_type" id="expiry_30days" value="30days">
+                                            <label class="form-check-label" for="expiry_30days">
+                                                <i class="fas fa-calendar-alt me-2"></i>Expires after 30 days
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="expiry_type" id="expiry_custom" value="custom">
+                                            <label class="form-check-label" for="expiry_custom">
+                                                <i class="fas fa-calendar-plus me-2"></i>Custom expiration
+                                            </label>
+                                            <div class="input-group mt-2 custom-expiry-input" style="display: none;">
+                                                <input type="number" class="form-control" name="custom_expiry_days" id="custom_expiry_days" min="1" placeholder="Number of days">
+                                                <span class="input-group-text">days</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="form-section">
+                                    <h5 class="section-title">Usage Limit</h5>
+                                    <div class="form-group mb-3">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" name="uses_type" id="uses_unlimited" value="unlimited" checked>
+                                            <label class="form-check-label" for="uses_unlimited">
+                                                <i class="fas fa-users me-2"></i>Unlimited uses
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="uses_type" id="uses_limited" value="limited">
+                                            <label class="form-check-label" for="uses_limited">
+                                                <i class="fas fa-user-lock me-2"></i>Limited number of uses
+                                            </label>
+                                            <div class="input-group mt-2 limited-uses-input" style="display: none;">
+                                                <input type="number" class="form-control" name="max_uses" id="max_uses" min="1" placeholder="Maximum uses">
+                                                <span class="input-group-text">people</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="fas fa-magic me-2"></i>Generate Invitation Link
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Warning about who should be invited -->
+                        <div class="alert alert-warning mt-4">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>Important:</h5>
+                            <p>Only share invitations with people who:</p>
+                            <ul>
+                                <li>You personally know and trust</li>
+                                <li>Are part of your academic institution</li>
+                                <li>Need access to study materials for educational purposes</li>
+                            </ul>
+                            <p class="mb-0">Invitees will have access to all shared materials in this group.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .invitation-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .invitation-icon {
+        font-size: 3rem;
+        color: #7B68EE;
+        margin-bottom: 1.5rem;
+    }
+
+    .invitation-success-icon {
+        font-size: 3rem;
+        color: #28a745;
+        margin-bottom: 1.5rem;
+    }
+
+    .invitation-card h4 {
+        margin-bottom: 1rem;
+        color: #212529;
+        font-weight: 600;
+    }
+
+    .invitation-card p {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section {
+        background-color: #f9f9f9;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+        font-size: 1.1rem;
+        color: #495057;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .btn-primary {
+        background-color: #7B68EE;
+        border-color: #7B68EE;
+    }
+
+    .btn-primary:hover {
+        background-color: #6A5ACD;
+        border-color: #6A5ACD;
+    }
+
+    .invitation-link-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+        border: 1px solid rgba(123, 104, 238, 0.2);
+        margin-bottom: 1.5rem;
+    }
+
+    .invitation-link-card h5 {
+        color: #7B68EE;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .invitation-details {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e9ecef;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+
+    .detail-item i {
+        width: 25px;
+        color: #7B68EE;
+        margin-right: 0.5rem;
+    }
+
+    .invitation-preview-card {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 1.5rem;
+    }
+
+    .invitation-preview-card h5 {
+        color: #7B68EE;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .preview-box {
+        background: white;
+        border-radius: 12px;
+        border: 1px solid #dee2e6;
+        overflow: hidden;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        padding: 2rem;
+        position: relative;
+    }
+
+    .envelope-animation {
+        perspective: 1000px;
+    }
+
+    .envelope {
+        position: relative;
+        width: 100%;
+        background-color: #f0f0ff;
+        border-radius: 10px;
+        box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        transform-style: preserve-3d;
+    }
+
+    .envelope-flap {
+        position: absolute;
+        top: -20px;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: linear-gradient(135deg, #7B68EE 25%, #9D8DF2 75%);
+        transform-origin: bottom;
+        transform: rotateX(-180deg);
+        z-index: 2;
+        clip-path: polygon(0 0, 50% 100%, 100% 0, 100% 100%, 0 100%);
+    }
+
+    .envelope-content {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 8px;
+        margin: 10px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+
+    .preview-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .preview-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: #7B68EE;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-right: 1rem;
+    }
+
+    .preview-info h6 {
+        margin: 0;
+        color: #212529;
+        font-weight: 600;
+    }
+
+    .preview-info p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .preview-body {
+        text-align: center;
+        padding: 1.5rem 0;
+    }
+
+    .preview-group-name {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+
+    .preview-group-details {
+        color: #6c757d;
+    }
+
+    .qr-container {
+        display: flex;
+        justify-content: center;
+        margin: 10px 0;
+    }
+
+    .qr-code {
+        border: 1px solid #dee2e6;
+        padding: 5px;
+        background: white;
+        border-radius: 5px;
+    }
+</style>
+
+<script>
+function copyToClipboard() {
+    var copyText = document.getElementById("invitationLink");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    document.execCommand("copy");
+
+    var copyButton = document.getElementById("copyButton");
+    var originalHTML = copyButton.innerHTML;
+    copyButton.innerHTML = '<i class="fas fa-check"></i>';
+    copyButton.classList.remove("btn-outline-primary");
+    copyButton.classList.add("btn-success");
+
+    setTimeout(function() {
+        copyButton.innerHTML = originalHTML;
+        copyButton.classList.remove("btn-success");
+        copyButton.classList.add("btn-outline-primary");
+    }, 2000);
+}
+
+// Show/hide custom expiration input
+document.addEventListener('DOMContentLoaded', function() {
+    if(document.getElementById('expiry_custom')) {
+        var customExpiry = document.getElementById('expiry_custom');
+        var customExpiryInput = document.querySelector('.custom-expiry-input');
+
+        customExpiry.addEventListener('change', function() {
+            if(this.checked) {
+                customExpiryInput.style.display = 'flex';
+            } else {
+                customExpiryInput.style.display = 'none';
+            }
+        });
+
+        // For other radio buttons
+        var otherRadios = document.querySelectorAll('input[name="expiry_type"]:not(#expiry_custom)');
+        otherRadios.forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                if(this.checked) {
+                    customExpiryInput.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // Show/hide limited uses input
+    if(document.getElementById('uses_limited')) {
+        var limitedUses = document.getElementById('uses_limited');
+        var unlimitedUses = document.getElementById('uses_unlimited');
+        var limitedUsesInput = document.querySelector('.limited-uses-input');
+
+        limitedUses.addEventListener('change', function() {
+            if(this.checked) {
+                limitedUsesInput.style.display = 'flex';
+            } else {
+                limitedUsesInput.style.display = 'none';
+            }
+        });
+
+        unlimitedUses.addEventListener('change', function() {
+            if(this.checked) {
+                limitedUsesInput.style.display = 'none';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

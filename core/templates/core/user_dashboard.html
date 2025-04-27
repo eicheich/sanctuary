@@ -1,0 +1,952 @@
+{% extends 'base/base.html' %}
+
+{% block title %}My Learning Space | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="user-dashboard">
+    <!-- Dashboard Header -->
+    <header class="dashboard-header mb-4">
+        <div class="container-fluid px-0">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="dashboard-title">
+                    <h1>My Learning Space</h1>
+                    <p class="subtitle">Your personalized study environment</p>
+                </div>
+                <div class="dashboard-actions">
+                    <a href="{% url 'request_study_group' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Request Group
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="container-fluid px-0">
+        <!-- Stats Overview Cards -->
+        <div class="stats-overview mb-4">
+            <div class="row g-3">
+                <div class="col-lg-4">
+                    <div class="stat-card groups-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ user_groups|length }}</h3>
+                            <p class="stat-label">Study Groups</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="stat-card materials-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">{{ user_courses|length }}</h3>
+                            <p class="stat-label">Learning Materials</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="stat-card progress-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 class="stat-value">🔥</h3>
+                            <p class="stat-label">Keep Learning & Growing!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content-area row g-4">
+            <!-- Left Section with Groups and Courses -->
+            <div class="col-lg-8">
+                <!-- Study Groups Section -->
+                <section class="content-section study-groups mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-users icon-circle"></i>
+                            My Study Groups
+                        </h2>
+                        {% if user_groups %}
+                        <span class="section-indicator">{{ user_groups|length }} groups</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="content-card">
+                        {% if user_groups %}
+                            <div class="groups-grid">
+                                {% for group in user_groups %}
+                                <div class="group-card">
+                                    <div class="group-card-header">
+                                        <h3 class="group-card-title">{{ group.group_name }}</h3>
+                                        <span class="group-card-badge">{{ group.courses.count }} courses</span>
+                                    </div>
+                                    <div class="group-card-body">
+                                        <p class="group-card-institution">
+                                            <i class="fas fa-building me-2"></i>{{ group.institution }}
+                                        </p>
+                                        <div class="group-card-members">
+                                            <div class="members-avatars">
+                                                {% for member in group.members.all|slice:":3" %}
+                                                <div class="member-avatar">{{ member.username|first|upper }}</div>
+                                                {% endfor %}
+                                                {% if group.members.count > 3 %}
+                                                <div class="member-avatar more">+{{ group.members.count|add:"-3" }}</div>
+                                                {% endif %}
+                                            </div>
+                                            <span class="members-count">{{ group.members.count }} members</span>
+                                        </div>
+                                    </div>
+                                    <div class="group-card-footer">
+                                        {% if group.created_by == user %}
+                                            <a href="{% url 'manage_group' group.id %}" class="btn btn-primary w-100">
+                                                <i class="fas fa-cog me-2"></i>Manage Group
+                                            </a>
+                                        {% else %}
+                                            <div class="d-flex gap-2">
+                                                <a href="{% url 'course_detail' group.courses.first.id %}" class="btn btn-primary flex-grow-1">
+                                                    <i class="fas fa-door-open me-2"></i>Enter Group
+                                                </a>
+                                                <a href="{% url 'leave_group' group_id=group.id %}" class="btn btn-outline-danger">
+                                                    <i class="fas fa-sign-out-alt"></i>
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-users"></i>
+                                </div>
+                                <h3 class="empty-title">Anda belum tergabung dalam grup studi</h3>
+                                <p class="empty-description">Untuk mulai berkolaborasi dan mengakses materi pembelajaran, Anda perlu membuat atau bergabung dengan grup studi</p>
+                                <div class="empty-actions">
+                                    <a href="{% url 'request_study_group' %}" class="btn btn-primary">
+                                        <i class="fas fa-users me-2"></i>Ajukan Pembuatan Grup
+                                    </a>
+                                </div>
+                                <div class="empty-info mt-4">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <span>Pengajuan grup Anda akan ditinjau oleh administrator. Setelah disetujui, Anda dapat mulai mengunggah dan berbagi materi pembelajaran.</span>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Courses Section -->
+                <section class="content-section courses mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-book-open icon-circle success"></i>
+                            Learning Materials
+                        </h2>
+                        {% if user_courses %}
+                        <span class="section-indicator">{{ user_courses|length }} courses</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="content-card">
+                        {% if user_courses %}
+                            <div class="courses-grid">
+                                {% for course in user_courses %}
+                                <div class="course-card">
+                                    <div class="course-card-header">
+                                        <div class="course-stats">
+                                            <span class="course-stat topics">
+                                                <i class="fas fa-layer-group"></i>
+                                                <span>{{ course.topics.count }} topics</span>
+                                            </span>
+                                            <span class="course-stat files">
+                                                <i class="fas fa-file-alt"></i>
+                                                <span>{{ course.files.count }} files</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="course-card-body">
+                                        <h3 class="course-title">{{ course.course_name }}</h3>
+                                        <p class="course-group">
+                                            <i class="fas fa-users me-2"></i>{{ course.group.group_name }}
+                                        </p>
+                                        <div class="progress-container">
+                                            <div class="progress">
+                                                {% if forloop.counter|divisibleby:3 %}
+                                                    <div class="progress-bar bg-success" style="width: 25%"></div>
+                                                {% elif forloop.counter|divisibleby:2 %}
+                                                    <div class="progress-bar bg-warning" style="width: 65%"></div>
+                                                {% else %}
+                                                    <div class="progress-bar bg-primary" style="width: 45%"></div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="course-card-footer">
+                                        <span class="course-date">
+                                            <i class="fas fa-calendar-alt me-1"></i>{{ course.created_at|date:"M d" }}
+                                        </span>
+                                        <a href="{% url 'course_detail' course.id %}" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-arrow-right me-1"></i>Access
+                                        </a>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-book-open"></i>
+                                </div>
+                                <h3 class="empty-title">No learning materials available</h3>
+                                <p class="empty-description">Join a group to share and access study materials</p>
+                                {% if not user_groups %}
+                                <div class="empty-actions">
+                                    <a href="{% url 'request_study_group' %}" class="btn btn-primary">
+                                        <i class="fas fa-users me-2"></i>Create a Study Group First
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right Section with Recent Files and Activity -->
+            <div class="col-lg-4">
+                <!-- Recent Files -->
+                <section class="content-section recent-files mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-file-upload icon-circle info"></i>
+                            Recent Files
+                        </h2>
+                    </div>
+
+                    <div class="content-card">
+                        {% if recent_files %}
+                            <div class="files-list">
+                                {% for file in recent_files|slice:":5" %}
+                                <a href="{{ file.file.url }}" class="file-item" target="_blank">
+                                    <div class="file-icon">
+                                        {% with file_url=file.file.url %}
+                                            {% if ".png" in file_url or ".jpg" in file_url or ".jpeg" in file_url %}
+                                                <img src="{{ file_url }}" alt="{{ file.title }}" class="file-thumbnail">
+                                            {% else %}
+                                                {% if file.file_type == 'pdf' %}
+                                                    <i class="fas fa-file-pdf text-danger"></i>
+                                                {% elif file.file_type == 'code' %}
+                                                    <i class="fas fa-file-code text-primary"></i>
+                                                {% else %}
+                                                    <i class="fas fa-file-alt text-secondary"></i>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endwith %}
+                                    </div>
+                                    <div class="file-details">
+                                        <h4 class="file-title">{{ file.title }}</h4>
+                                        <div class="file-meta">
+                                            <span class="file-topic">{{ file.topic.topic_name }}</span>
+                                            <span class="file-date">{{ file.created_at|date:"M d" }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="file-action">
+                                        <i class="fas fa-external-link-alt"></i>
+                                    </div>
+                                </a>
+                                {% endfor %}
+                            </div>
+                            {% if recent_files.count > 5 %}
+                            <div class="view-all-link">
+                                <a href="#" class="btn btn-outline-primary btn-sm w-100">
+                                    View All Files
+                                </a>
+                            </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="empty-state small">
+                                <div class="empty-icon">
+                                    <i class="fas fa-file-upload"></i>
+                                </div>
+                                <h3 class="empty-title">No files yet</h3>
+                                <p class="empty-description">Be the first to share learning materials!</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </section>
+
+                <!-- Tips Section -->
+                <section class="content-section tips mb-4">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-lightbulb icon-circle warning"></i>
+                            Learning Tips
+                        </h2>
+                    </div>
+
+                    <div class="content-card">
+                        <div class="tip-card">
+                            <div class="tip-icon">💡</div>
+                            <h4 class="tip-title">Create study schedules</h4>
+                            <p class="tip-content">Regular study times help maintain consistency and improve retention</p>
+                        </div>
+                        <div class="tip-card">
+                            <div class="tip-icon">🎯</div>
+                            <h4 class="tip-title">Set clear goals</h4>
+                            <p class="tip-content">Define what you want to achieve in each study session</p>
+                        </div>
+                        <div class="tip-card">
+                            <div class="tip-icon">👥</div>
+                            <h4 class="tip-title">Collaborate actively</h4>
+                            <p class="tip-content">Sharing knowledge with peers enhances understanding</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modern UX Focused Styles -->
+<style>
+    /* Root variables with soft purple theme */
+    :root {
+        --primary-color: #7B68EE;
+        --primary-dark: #6A5ACD;
+        --primary-rgb: 123, 104, 238;
+        --secondary-color: #9D8DF2;
+        --accent-color: #B19CD9;
+        --success-color: #6FCF97;
+        --danger-color: #f72585;
+        --warning-color: #FFCA28;
+        --info-color: #64B5F6;
+        --light-color: #F8F9FA;
+        --dark-color: #212529;
+        --gray-700: #495057;
+        --border-radius: 12px;
+        --box-shadow: 0 4px 12px rgba(123, 104, 238, 0.08);
+        --transition: all 0.3s ease;
+    }
+
+    /* General Dashboard Styles */
+    .user-dashboard {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background-color: #F0F1FF;
+        color: #333;
+    }
+
+    /* Dashboard Header */
+    .dashboard-header {
+        padding: 1.5rem 0 1rem 0;
+    }
+
+    .dashboard-title h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0;
+        color: var(--primary-color);
+    }
+
+    .dashboard-title .subtitle {
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    /* Stats Cards */
+    .stat-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        border-radius: var(--border-radius);
+        background-color: white;
+        box-shadow: var(--box-shadow);
+        transition: var(--transition);
+        height: 100%;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .groups-card {
+        border-left: 4px solid var(--primary-color);
+    }
+
+    .materials-card {
+        border-left: 4px solid var(--success-color);
+    }
+
+    .progress-card {
+        border-left: 4px solid var(--warning-color);
+    }
+
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .groups-card .stat-icon {
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+    }
+
+    .materials-card .stat-icon {
+        background-color: rgba(111, 207, 151, 0.1);
+        color: var(--success-color);
+    }
+
+    .progress-card .stat-icon {
+        background-color: rgba(255, 202, 40, 0.1);
+        color: var(--warning-color);
+    }
+
+    .stat-icon i {
+        font-size: 1.8rem;
+    }
+
+    .stat-content {
+        flex-grow: 1;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+        line-height: 1;
+    }
+
+    .stat-label {
+        color: #6c757d;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    /* Section styles */
+    .content-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--dark-color);
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-indicator {
+        font-size: 0.8rem;
+        background-color: rgba(123, 104, 238, 0.1);
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        color: var(--primary-color);
+    }
+
+    .icon-circle {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+    }
+
+    .icon-circle.success {
+        background-color: rgba(111, 207, 151, 0.1);
+        color: var (--success-color);
+    }
+
+    .icon-circle.warning {
+        background-color: rgba(255, 202, 40, 0.1);
+        color: var(--warning-color);
+    }
+
+    .icon-circle.info {
+        background-color: rgba(100, 181, 246, 0.1);
+        color: var(--info-color);
+    }
+
+    .content-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        box-shadow: var(--box-shadow);
+        padding: 1.5rem;
+        height: 100%;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    /* Groups Grid */
+    .groups-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .group-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(123, 104, 238, 0.08);
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .group-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .group-card-header {
+        padding: 1.25rem 1.25rem 0.75rem 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .group-card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0;
+        color: var(--primary-color);
+    }
+
+    .group-card-badge {
+        background-color: rgba(123, 104, 238, 0.1);
+        color: var(--primary-color);
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .group-card-body {
+        padding: 0 1.25rem 1.25rem 1.25rem;
+        flex-grow: 1;
+    }
+
+    .group-card-institution {
+        color: #6c757d;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .group-card-members {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .members-avatars {
+        display: flex;
+    }
+
+    .member-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: var(--primary-color);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.8rem;
+        margin-right: -10px;
+        border: 2px solid white;
+    }
+
+    .member-avatar.more {
+        background-color: #9D8DF2;
+    }
+
+    .members-count {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    .group-card-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    /* Courses Grid */
+    .courses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .course-card {
+        background-color: white;
+        border-radius: var(--border-radius);
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(123, 104, 238, 0.08);
+        transition: var(--transition);
+        border: 1px solid rgba(123, 104, 238, 0.05);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(123, 104, 238, 0.12);
+        border-color: rgba(123, 104, 238, 0.2);
+    }
+
+    .course-card-header {
+        padding: 1.25rem 1.25rem 0;
+    }
+
+    .course-stats {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .course-stat {
+        display: flex;
+        align-items: center;
+        padding: 0.35rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        background-color: rgba(123, 104, 238, 0.05);
+        color: var(--primary-color);
+    }
+
+    .course-stat i {
+        margin-right: 0.5rem;
+    }
+
+    .course-card-body {
+        padding: 1.25rem;
+        flex-grow: 1;
+    }
+
+    .course-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        color: var(--primary-color);
+    }
+
+    .course-group {
+        color: #6c757d;
+        margin-bottom: 1rem;
+        font-size: 0.85rem;
+    }
+
+    .progress-container {
+        margin-top: 1rem;
+    }
+
+    .progress {
+        height: 6px;
+        border-radius: 3px;
+        background-color: rgba(123, 104, 238, 0.05);
+    }
+
+    .progress-bar {
+        border-radius: 3px;
+    }
+
+    .bg-primary {
+        background-color: var(--primary-color) !important;
+    }
+
+    .bg-success {
+        background-color: var(--success-color) !important;
+    }
+
+    .bg-warning {
+        background-color: var(--warning-color) !important;
+    }
+
+    .course-card-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid rgba(123, 104, 238, 0.05);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .course-date {
+        font-size: 0.8rem;
+        color: #6c757d;
+    }
+
+    /* Files List */
+    .files-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .file-item {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-radius: 8px;
+        transition: var(--transition);
+        text-decoration: none;
+        color: inherit;
+        border: 1px solid rgba(123, 104, 238, 0.05);
+    }
+
+    .file-item:hover {
+        background-color: rgba(123, 104, 238, 0.03);
+        transform: translateY(-2px);
+        border-color: rgba(123, 104, 238, 0.1);
+    }
+
+    .file-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background-color: rgba(123, 104, 238, 0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 0.75rem;
+        flex-shrink: 0;
+        overflow: hidden;
+    }
+
+    .file-icon i {
+        font-size: 1.25rem;
+        color: var(--primary-color);
+    }
+
+    .file-thumbnail {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .file-details {
+        flex-grow: 1;
+    }
+
+    .file-title {
+        font-size: 0.95rem;
+        font-weight: 500;
+        margin: 0 0 0.25rem 0;
+        color: var(--dark-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 180px;
+    }
+
+    .file-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+
+    .file-topic {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
+    }
+
+    .file-action {
+        color: var(--primary-color);
+        margin-left: 0.5rem;
+    }
+
+    .view-all-link {
+        margin-top: 1rem;
+    }
+
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    /* Tips Cards */
+    .tip-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-radius: 8px;
+        background-color: rgba(123, 104, 238, 0.03);
+        border-left: 3px solid var(--primary-color);
+    }
+
+    .tip-card:last-child {
+        margin-bottom: 0;
+    }
+
+    .tip-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .tip-title {
+        font-size: 1rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        color: var(--primary-color);
+    }
+
+    .tip-content {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin: 0;
+    }
+
+    /* Empty states */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+    }
+
+    .empty-state.small {
+        padding: 1.5rem 1rem;
+    }
+
+    .empty-icon {
+        font-size: 3rem;
+        color: rgba(123, 104, 238, 0.3);
+        margin-bottom: 1rem;
+    }
+
+    .empty-state.small .empty-icon {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--primary-color);
+        margin-bottom: 0.75rem;
+    }
+
+    .empty-state.small .empty-title {
+        font-size: 1rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-description {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .empty-state.small .empty-description {
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .empty-actions {
+        margin-bottom: 1.5rem;
+    }
+
+    .empty-info {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        background-color: rgba(123, 104, 238, 0.05);
+        border-radius: 6px;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+
+    /* Button styling */
+    .btn-primary {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+        border-color: var(--primary-dark);
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 991px) {
+        .courses-grid, .groups-grid {
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        }
+    }
+
+    @media (max-width: 767px) {
+        .dashboard-title h1 {
+            font-size: 1.5rem;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+        }
+
+        .stat-icon i {
+            font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+        }
+
+        .courses-grid, .groups-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Image loading error handling
+        document.querySelectorAll('img').forEach(img => {
+            img.onerror = function() {
+                const iconEl = document.createElement('i');
+                iconEl.className = 'fas fa-file-image text-secondary';
+                iconEl.style.fontSize = '1.5rem';
+                if (img.parentNode) {
+                    img.parentNode.replaceChild(iconEl, img);
+                }
+            };
+        });
+    });
+</script>
+{% endblock %}

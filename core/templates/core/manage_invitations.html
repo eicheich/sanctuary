@@ -1,0 +1,135 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Manage Invitations | {{ group.group_name }} | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'manage_group' group_id=group.id %}">{{ group.group_name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Manage Invitations</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h3 class="mb-0">Manage Invitations - {{ group.group_name }}</h3>
+                    <a href="{% url 'generate_invitation' group_id=group.id %}" class="btn btn-light">
+                        <i class="fas fa-plus me-2"></i>New Invitation
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if invitations %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Sent By</th>
+                                        <th>Date Sent</th>
+                                        <th>Expires</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for invitation in invitations %}
+                                    <tr>
+                                        <td>{{ invitation.email }}</td>
+                                        <td>
+                                            {% if invitation.status == 'pending' %}
+                                                <span class="invitation-status invitation-status-pending">Pending</span>
+                                            {% elif invitation.status == 'accepted' %}
+                                                <span class="invitation-status invitation-status-accepted">Accepted</span>
+                                            {% elif invitation.status == 'rejected' %}
+                                                <span class="invitation-status invitation-status-rejected">Rejected</span>
+                                            {% else %}
+                                                <span class="invitation-status invitation-status-expired">Expired</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ invitation.created_by.username }}</td>
+                                        <td>{{ invitation.created_at|date:"M d, Y" }}</td>
+                                        <td>{{ invitation.expires_at|date:"M d, Y" }}</td>
+                                        <td>
+                                            {% if invitation.status == 'pending' %}
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="dropdownMenuButton{{ invitation.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        Actions
+                                                    </button>
+                                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton{{ invitation.id }}">
+                                                        <li>
+                                                            <button type="button" class="dropdown-item" onclick="copyInvitationLink('{{ request.scheme }}://{{ request.get_host }}{% url "accept_invitation" code=invitation.invitation_code %}')">
+                                                                <i class="fas fa-copy me-2"></i>Copy Link
+                                                            </button>
+                                                        </li>
+                                                        <li>
+                                                            <form method="POST" action="{% url 'cancel_invitation' invitation_id=invitation.id %}" style="display: inline;">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="dropdown-item text-danger">
+                                                                    <i class="fas fa-times-circle me-2"></i>Cancel Invitation
+                                                                </button>
+                                                            </form>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                    {% if invitation.status == 'accepted' %}
+                                                        Accepted by {{ invitation.accepted_by.username }}
+                                                    {% elif invitation.status == 'rejected' %}
+                                                        Cancelled
+                                                    {% else %}
+                                                        Expired
+                                                    {% endif %}
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-envelope fa-3x text-muted mb-3"></i>
+                            <h4>No invitations sent yet</h4>
+                            <p>Start inviting members to your study group!</p>
+                            <a href="{% url 'generate_invitation' group_id=group.id %}" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>Create First Invitation
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyInvitationLink(link) {
+        navigator.clipboard.writeText(link).then(function() {
+            alert('Invitation link copied to clipboard!');
+        }, function() {
+            // Fallback for browsers that don't support clipboard API
+            var textarea = document.createElement('textarea');
+            textarea.textContent = link;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+
+            try {
+                document.execCommand('copy');
+                alert('Invitation link copied to clipboard!');
+            } catch (ex) {
+                console.warn('Copy to clipboard failed.', ex);
+                alert('Failed to copy link. Please copy it manually: ' + link);
+            } finally {
+                document.body.removeChild(textarea);
+            }
+        });
+    }
+</script>
+{% endblock %}

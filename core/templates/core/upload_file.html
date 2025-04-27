@@ -1,0 +1,103 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Upload File | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Upload Learning Material to {{ topic.topic_name }}</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Upload learning materials to share with your group members.</p>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                        <div class="form-text">Enter a descriptive title for this file</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        <div class="form-text">Optional description of what this file contains</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file_type" class="form-label">File Type</label>
+                        <select class="form-select" id="file_type" name="file_type" required>
+                            <option value="image">Image</option>
+                            <option value="pdf">PDF</option>
+                            <option value="code">Code</option>
+                            <option value="other">Other</option>
+                        </select>
+                        <div id="file_type_helper" class="form-text">Type will be auto-detected when you select a file</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File</label>
+                        <input type="file" class="form-control" id="file" name="file" required>
+                        <div id="preview_container" class="mt-2 text-center d-none">
+                            <img id="image_preview" class="img-fluid rounded border" style="max-height: 200px;" />
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Upload File</button>
+                        <a href="{% url 'topic_detail' topic.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const fileInput = document.getElementById('file');
+        const fileTypeSelect = document.getElementById('file_type');
+        const previewContainer = document.getElementById('preview_container');
+        const imagePreview = document.getElementById('image_preview');
+
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Auto-detect file type
+            if (file.type.startsWith('image/')) {
+                fileTypeSelect.value = 'image';
+
+                // Show preview for images
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    previewContainer.classList.remove('d-none');
+                };
+                reader.readAsDataURL(file);
+            } else if (file.type === 'application/pdf') {
+                fileTypeSelect.value = 'pdf';
+                previewContainer.classList.add('d-none');
+            } else if (
+                file.name.endsWith('.js') ||
+                file.name.endsWith('.py') ||
+                file.name.endsWith('.java') ||
+                file.name.endsWith('.html') ||
+                file.name.endsWith('.css') ||
+                file.name.endsWith('.php')
+            ) {
+                fileTypeSelect.value = 'code';
+                previewContainer.classList.add('d-none');
+            } else {
+                fileTypeSelect.value = 'other';
+                previewContainer.classList.add('d-none');
+            }
+        });
+    });
+</script>
+{% endblock %}

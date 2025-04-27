@@ -1,0 +1,45 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Create New Study Group | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Create New Study Group</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Create a new study group to organize learning materials for your team. Groups require approval from a Super Admin before they become active.</p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="group_name" class="form-label">Group Name</label>
+                        <input type="text" class="form-control" id="group_name" name="group_name" required>
+                        <div class="form-text">Choose a descriptive name for your group (e.g. "Software Engineering 2025")</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="institution" class="form-label">Institution</label>
+                        <input type="text" class="form-control" id="institution" name="institution" required>
+                        <div class="form-text">The name of your school, university or organization</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="purpose" class="form-label">Purpose</label>
+                        <textarea class="form-control" id="purpose" name="purpose" rows="4" required></textarea>
+                        <div class="form-text">Describe why you're creating this group and how it will be used</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Create Group</button>
+                        <a href="{% url 'home' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

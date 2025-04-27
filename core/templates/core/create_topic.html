@@ -1,0 +1,33 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Create Topic | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Create New Topic for {{ course.course_name }}</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">Create a new topic to organize learning materials within this course.</p>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="topic_name" class="form-label">Topic Name</label>
+                        <input type="text" class="form-control" id="topic_name" name="topic_name" required>
+                        <div class="form-text">Choose a descriptive name for your topic (e.g. "Data Structures" or "Chapter 3")</div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Create Topic</button>
+                        <a href="{% url 'course_detail' course.id %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

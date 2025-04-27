@@ -1,0 +1,90 @@
+{% extends 'base/base.html' %}
+
+{% block title %}Report Comment | SANCTUARY{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'topic_detail' topic_id=comment.file.topic.id %}">{{ comment.file.topic.topic_name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Report Comment</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0"><i class="fas fa-flag me-2"></i>Report Comment</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <p><i class="fas fa-info-circle me-2"></i>You're reporting the following comment:</p>
+                    </div>
+
+                    <!-- Comment Being Reported -->
+                    <div class="comment mb-4 p-3 border rounded bg-light">
+                        <div class="comment-header">
+                            <div class="comment-author">
+                                <strong>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
+                            </div>
+                            <div class="comment-date">
+                                {{ comment.created_at|date:"M d, Y g:i A" }}
+                            </div>
+                        </div>
+                        <div class="comment-text mt-2">
+                            {{ comment.content }}
+                        </div>
+                    </div>
+
+                    {% if messages %}
+                    <div class="mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="report_type" class="form-label">Report Reason*</label>
+                            <select class="form-select" id="report_type" name="report_type" required>
+                                <option value="" selected disabled>Select a reason</option>
+                                <option value="inappropriate">Inappropriate Content</option>
+                                <option value="spam">Spam</option>
+                                <option value="irrelevant">Irrelevant Content</option>
+                                <option value="offensive">Offensive or Harmful Content</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="description" class="form-label">Additional Description*</label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="Please provide details about why you're reporting this comment" required></textarea>
+                            <small class="form-text text-muted">Your report will be reviewed by the group administrators.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'topic_detail' topic_id=comment.file.topic.id %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-flag me-2"></i>Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="card-footer bg-light">
+                    <div class="text-muted small">
+                        <i class="fas fa-shield-alt me-1"></i> Your report will be kept confidential and reviewed by administrators.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
