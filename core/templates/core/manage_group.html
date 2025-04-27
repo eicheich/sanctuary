@@ -72,6 +72,7 @@
 
             <div class="content-card">
                 <div class="actions-grid">
+                    {% if group.status == 'approved' %}
                     <!-- Add Course Action -->
                     <a href="{% url 'create_course' group.id %}" class="action-card">
                         <div class="action-icon">
@@ -83,7 +84,6 @@
                         </div>
                     </a>
 
-                    {% if group.status == 'approved' %}
                     <!-- Invitations Action -->
                     <a href="{% url 'manage_invitations' group.id %}" class="action-card">
                         <div class="action-icon">
@@ -94,21 +94,6 @@
                             <p class="action-description">Manage group invitations</p>
                         </div>
                     </a>
-                    {% else %}
-                    <!-- Disabled Invitations Action -->
-                    <div class="action-card disabled">
-                        <div class="action-icon">
-                            <i class="fas fa-envelope-open-text"></i>
-                        </div>
-                        <div class="action-content">
-                            <h3 class="action-title">Invitations</h3>
-                            <p class="action-description">Requires approved group</p>
-                        </div>
-                        <div class="action-lock">
-                            <i class="fas fa-lock"></i>
-                        </div>
-                    </div>
-                    {% endif %}
 
                     <!-- Leaderboard Action -->
                     <a href="{% url 'group_leaderboard' group.id %}" class="action-card">
@@ -131,6 +116,63 @@
                             <p class="action-description">Handle reported comments</p>
                         </div>
                     </a>
+                    {% else %}
+                    <!-- Disabled Add Course Action -->
+                    <div class="action-card disabled">
+                        <div class="action-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Add Course</h3>
+                            <p class="action-description">Requires approved group</p>
+                        </div>
+                        <div class="action-lock">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <!-- Disabled Invitations Action -->
+                    <div class="action-card disabled">
+                        <div class="action-icon">
+                            <i class="fas fa-envelope-open-text"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Invitations</h3>
+                            <p class="action-description">Requires approved group</p>
+                        </div>
+                        <div class="action-lock">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <!-- Disabled Leaderboard Action -->
+                    <div class="action-card disabled">
+                        <div class="action-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Leaderboard</h3>
+                            <p class="action-description">Requires approved group</p>
+                        </div>
+                        <div class="action-lock">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+
+                    <!-- Disabled Reports Action -->
+                    <div class="action-card disabled">
+                        <div class="action-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="action-content">
+                            <h3 class="action-title">Reports</h3>
+                            <p class="action-description">Requires approved group</p>
+                        </div>
+                        <div class="action-lock">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </section>
@@ -224,9 +266,15 @@
                             {% endfor %}
                         </div>
                         <div class="view-all-link">
+                            {% if group.status == 'approved' %}
                             <a href="{% url 'create_course' group.id %}" class="btn btn-outline-primary btn-sm w-100">
                                 <i class="fas fa-plus me-2"></i>Create New Course
                             </a>
+                            {% else %}
+                            <button class="btn btn-outline-secondary btn-sm w-100" disabled title="Group must be approved to create courses">
+                                <i class="fas fa-lock me-2"></i>Create New Course (Requires Approval)
+                            </button>
+                            {% endif %}
                         </div>
                         {% else %}
                         <div class="empty-state">
@@ -234,12 +282,21 @@
                                 <i class="fas fa-book-open"></i>
                             </div>
                             <h3 class="empty-title">No courses yet</h3>
+                            {% if group.status == 'approved' %}
                             <p class="empty-description">Create your first course to start sharing learning materials</p>
                             <div class="empty-actions">
                                 <a href="{% url 'create_course' group.id %}" class="btn btn-primary">
                                     <i class="fas fa-plus me-2"></i>Create First Course
                                 </a>
                             </div>
+                            {% else %}
+                            <p class="empty-description">Your group needs to be approved before you can create courses</p>
+                            <div class="empty-actions">
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-lock me-2"></i>Waiting for Approval
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
                     </div>

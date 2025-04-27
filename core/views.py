@@ -13,7 +13,7 @@ import os
 from .models import User, StudyGroup, Course, Topic, LearningFile, ActivityLog, FileInteraction, Report, Notification
 from .models import UserAchievement, CommentReport, GroupInvitation, GroupLeaderboard, LeaderboardEntry
 from .models import PersonalInvitation, InvitationUse
-from .decorators import super_admin_required, admin_required, user_required
+from .decorators import super_admin_required, admin_required, user_required, approved_group_required
 
 # Import additional modules for new features
 from django.utils import timezone
@@ -422,6 +422,7 @@ def add_member(request, group_id):
     return render(request, 'core/add_member.html', {'group': group})
 
 @admin_required
+@approved_group_required
 def create_course(request, group_id):
     group = get_object_or_404(StudyGroup, id=group_id)
 
@@ -1443,6 +1444,7 @@ def delete_invitation(request, invitation_id):
 
 # Leaderboard and Achievement Views
 @login_required
+@approved_group_required
 def group_leaderboard(request, group_id):
     """View leaderboards for a specific study group"""
     group = get_object_or_404(StudyGroup, id=group_id)
