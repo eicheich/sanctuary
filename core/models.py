@@ -317,15 +317,12 @@ class ActivityLog(models.Model):
 # New models for enhanced features
 class UserAchievement(models.Model):
     ACHIEVEMENT_TYPE_CHOICES = (
-        ('active_user', 'Most Active User'),
-        ('contributor', 'Top Contributor'),
-        ('helpful', 'Most Helpful'),
-        ('engaged', 'Most Engaged')
+        ('active_member', 'Most Active Member'),
     )
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achievements')
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='user_achievements')
-    achievement_type = models.CharField(max_length=30, choices=ACHIEVEMENT_TYPE_CHOICES)
+    achievement_type = models.CharField(max_length=30, choices=ACHIEVEMENT_TYPE_CHOICES, default='active_member')
     title = models.CharField(max_length=100)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
@@ -405,14 +402,11 @@ class GroupInvitation(models.Model):
 
 class GroupLeaderboard(models.Model):
     LEADERBOARD_TYPE_CHOICES = (
-        ('activity', 'Most Active'),
-        ('contribution', 'Top Contributor'),
-        ('files', 'Most Files'),
-        ('downloads', 'Most Downloads')
+        ('active_member', 'Most Active Member'),
     )
 
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name='leaderboards')
-    leaderboard_type = models.CharField(max_length=20, choices=LEADERBOARD_TYPE_CHOICES)
+    leaderboard_type = models.CharField(max_length=20, choices=LEADERBOARD_TYPE_CHOICES, default='active_member')
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

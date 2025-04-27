@@ -1444,7 +1444,7 @@ def delete_invitation(request, invitation_id):
 
 # Leaderboard and Achievement Views
 @login_required
-@approved_group_required
+@approved_group_required()  # Now properly calling the decorator factory
 def group_leaderboard(request, group_id):
     """View leaderboards for a specific study group"""
     group = get_object_or_404(StudyGroup, id=group_id)
@@ -1492,16 +1492,13 @@ def update_leaderboards(request, group_id):
     if not (request.user.is_super_admin or group.created_by == request.user):
         return HttpResponseForbidden("You don't have permission to update leaderboards for this group.")
 
-    # Calculate and update each type of leaderboard
-    update_activity_leaderboard(group)
-    update_contribution_leaderboard(group)
-    update_files_leaderboard(group)
-    update_downloads_leaderboard(group)
+    # Calculate and update the active member leaderboard
+    update_active_member_leaderboard(group)
 
-    # Update achievements based on leaderboards
+    # Update achievements based on leaderboard
     update_group_achievements(group)
 
-    messages.success(request, "Group leaderboards and achievements have been updated!")
+    messages.success(request, "Group leaderboard and achievements have been updated!")
     return redirect('group_leaderboard', group_id=group_id)
 
 # Helper functions for leaderboard calculations
@@ -1664,66 +1661,113 @@ def update_downloads_leaderboard(group):
     leaderboard.save()
 
 def update_group_achievements(group):
-    """Update achievement titles based on leaderboard positions"""
-    # Get the current top users from each leaderboard
-    achievement_mapping = {
-        'activity': {
-            'type': 'active_user',
-            'title': 'Most Active Contributor',
-            'description': 'Most active member in the study group over the last 30 days'
-        },
-        'contribution': {
-            'type': 'contributor',
-            'title': 'Top Content Creator',
-            'description': 'Contributed the most topics and files to the study group'
-        },
-        'downloads': {
-            'type': 'helpful',
-            'title': 'Most Helpful Member',
-            'description': 'Their files have been downloaded more than anyone else\'s'
-        }
-    }
-
+    """Update achievement title based on leaderboard position"""
     # First, deactivate all current achievements for this group
     UserAchievement.objects.filter(
         group=group,
         is_active=True
     ).update(is_active=False)
 
-    # Then create new achievements for the top users in each category
-    for lb_type, achievement_info in achievement_mapping.items():
-        try:
-            # Get the #1 ranked user in this leaderboard category
-            leaderboard = GroupLeaderboard.objects.get(group=group, leaderboard_type=lb_type)
-            top_entry = LeaderboardEntry.objects.filter(leaderboard=leaderboard, rank=1).first()
+    try:
+        # Get the active member leaderboard
+        leaderboard = GroupLeaderboard.objects.get(group=group, leaderboard_type='active_member')
+        # Get the #1 ranked user
+        top_entry = LeaderboardEntry.objects.filter(leaderboard=leaderboard, rank=1).first()
 
-            if top_entry:
-                # Create or update achievement
-                achievement, created = UserAchievement.objects.get_or_create(
-                    user=top_entry.user,
-                    group=group,
-                    achievement_type=achievement_info['type'],
-                    defaults={
-                        'title': achievement_info['title'],
-                        'description': achievement_info['description'],
-                        'is_active': True
-                    }
-                )
+        if top_entry:
+            # Create or update achievement
+            achievement, created = UserAchievement.objects.get_or_create(
+                user=top_entry.user,
+                group=group,
+                achievement_type='active_member',
+                defaults={
+                    'title': 'Most Active Member',
+                    'description': 'Contributed the most by uploading files and having others download them',
+                    'is_active': True
+                }
+            )
 
-                if not created:
-                    achievement.is_active = True
-                    achievement.awarded_at = timezone.now()
-                    achievement.save()
+            if not created:
+                achievement.is_active = True
+                achievement.awarded_at = timezone.now()
+                achievement.save()
 
-                # Create notification for the user
-                Notification.objects.create(
-                    user=top_entry.user,
-                    notification_type='system',
-                    title=f"Achievement Earned: {achievement_info['title']}",
-                    message=f"Congratulations! You've earned the '{achievement_info['title']}' achievement in {group.group_name}"
-                )
-        except GroupLeaderboard.DoesNotExist:
-            continue
+            # Create notification for the user
+            Notification.objects.create(
+                user=top_entry.user,
+                notification_type='system',
+                title="Achievement Earned: Most Active Member",
+                message=f"Congratulations! You've earned the 'Most Active Member' achievement in {group.group_name}"
+            )
+    except GroupLeaderboard.DoesNotExist:
+        pass
+
+def update_active_member_leaderboard(group):
+    """
+    Update active member leaderboard based on:
+    1. File uploads (5 points each)
+    2. Unique downloads (1 point per unique user download)
+    """
+    # Get or create the leaderboard
+    leaderboard, created = GroupLeaderboard.objects.get_or_create(
+        group=group,
+        leaderboard_type='active_member'
+    )
+
+    # Get all users in this group
+    users = group.members.all()
+
+    # Calculate scores for each user
+    user_scores = []
+    for user in users:
+        score = 0
+
+        # Count files uploaded in this group (5 points each)
+        file_count = LearningFile.objects.filter(
+            course__group=group,
+            uploaded_by=user
+        ).count()
+        score += file_count * 5
+
+        # Get all files uploaded by this user
+        user_files = LearningFile.objects.filter(
+            course__group=group,
+            uploaded_by=user
+        )
+
+        # Count unique downloads for each file
+        for file in user_files:
+            # Count unique users who downloaded this file
+            unique_downloads = FileInteraction.objects.filter(
+                file=file,
+                interaction_type='download'
+            ).values('user').distinct().count()
+
+            score += unique_downloads
+
+        if score > 0:
+            user_scores.append({
+                'user': user,
+                'score': score
+            })
+
+    # Sort by score
+    user_scores.sort(key=lambda x: x['score'], reverse=True)
+
+    # Clear existing entries
+    LeaderboardEntry.objects.filter(leaderboard=leaderboard).delete()
+
+    # Create new entries
+    for i, entry in enumerate(user_scores):
+        LeaderboardEntry.objects.create(
+            leaderboard=leaderboard,
+            user=entry['user'],
+            score=entry['score'],
+            rank=i + 1
+        )
+
+    # Update leaderboard timestamp
+    leaderboard.save()
 
 # Comment Report Views
 @login_required
